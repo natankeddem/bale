@@ -88,6 +88,7 @@ class Manage(Tab):
             filesystems = await self.zfs.filesystems
             mount_path = filesystems.data[rows[0]["filesystem"]]["mountpoint"]
             await sshdl.SshFileBrowse(zfs=self.zfs, path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}")
+        self._set_selection()
 
     async def _find(self) -> None:
         await sshdl.SshFileFind(zfs=self.zfs)
