@@ -370,11 +370,11 @@ class Manage(Tab):
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     spinner = el.Spinner()
-                    ui.button("Apply", on_click=apply).props("outline square").classes("text-secondary")
-                    ui.button("Dry Run", on_click=dry_run).props("outline square").classes("text-secondary")
-                    ui.button("Reset", on_click=reset).props("outline square").classes("text-secondary")
-                    ui.button("Remove", on_click=lambda: dialog.submit("finish")).props("outline square").classes("text-secondary")
-                    ui.button("Exit", on_click=lambda: dialog.submit("exit")).props("outline square").classes("text-secondary")
+                    el.DButton("Apply", on_click=apply)
+                    el.DButton("Dry Run", on_click=dry_run)
+                    el.DButton("Reset", on_click=reset)
+                    el.DButton("Remove", on_click=lambda: dialog.submit("finish"))
+                    el.DButton("Exit", on_click=lambda: dialog.submit("exit"))
                     el.Spinner(master=spinner)
 
         await dialog
