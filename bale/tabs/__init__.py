@@ -129,23 +129,17 @@ class Tab:
 
     def _set_selection(self, mode=None):
         row_selection = "single"
-        name_def = {
-            "headerName": "Name",
-            "field": "name",
-            "filter": "agTextColumnFilter",
-            "headerCheckboxSelection": False,
-            "headerCheckboxSelectionFilteredOnly": True,
-            "checkboxSelection": False,
-        }
+        self._grid.options["columnDefs"][0]["headerCheckboxSelection"] = False
+        self._grid.options["columnDefs"][0]["headerCheckboxSelectionFilteredOnly"] = True
+        self._grid.options["columnDefs"][0]["checkboxSelection"] = False
         if mode is None:
             pass
         elif mode == "single":
-            name_def["checkboxSelection"] = True
+            self._grid.options["columnDefs"][0]["checkboxSelection"] = True
         elif mode == "multiple":
             row_selection = "multiple"
-            name_def["headerCheckboxSelection"] = True
-            name_def["checkboxSelection"] = True
-        self._grid.options["columnDefs"][0] = name_def
+            self._grid.options["columnDefs"][0]["headerCheckboxSelection"] = True
+            self._grid.options["columnDefs"][0]["checkboxSelection"] = True
         self._grid.options["rowSelection"] = row_selection
         self._grid.update()
 
