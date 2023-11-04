@@ -1,7 +1,8 @@
 # snapper: ZFS Snapshot GUI
 
-## ⚠️ **_WARNING_**
+https://github.com/natankeddem/snapper/assets/44515217/e26fef13-4fc4-44c3-96a7-70d846f7344d
 
+## ⚠️ **_WARNING_**
 **This utility is currently in early development and may undergo breaking changes in future updates. Your configuration may be lost, and snapshot functionality might be affected. Use with caution; data loss may occur.**
 
 ## Features
