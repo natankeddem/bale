@@ -78,6 +78,7 @@ class Zfs:
         self._last_data: Dict[str, Any] = {}
 
     def notify(self, command: str):
+        command = command if len(command) < 160 else command[:160] + "..."
         el.notify(command)
 
     async def execute(self, command: str, notify: bool = True) -> Result:
@@ -225,7 +226,7 @@ class Ssh(ssh.Ssh, Zfs):
         Zfs.__init__(self)
 
     def notify(self, command: str):
-        el.notify(f"<{self.host}> {command}")
+        super().notify(f"<{self.host}> {command}")
 
     async def execute(self, command: str, notify: bool = True) -> Result:
         if notify:
