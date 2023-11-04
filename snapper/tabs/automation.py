@@ -139,11 +139,6 @@ class Automation(Tab):
             self._update_automations()
 
     async def _display_job(self, job_data) -> None:
-        def register_terminal(e):
-            if job_data.args["data"]["name"] in job_handlers:
-                job_handlers[job_data.args["data"]["name"]].register_terminal(e.sender)
-                spinner.bind_visibility_from(job_handlers[job_data.args["data"]["name"]], "is_busy")
-
         async def run():
             for job in self.scheduler.scheduler.get_jobs():
                 if job.id == job_data.args["data"]["name"]:
@@ -283,9 +278,6 @@ class Automation(Tab):
             return False
 
         def add_option(option, value=""):
-            # valid_required_option = True
-            # if self.options[option]["required"] is True and value == "":
-            #     valid_required_option = False
             if (
                 option is not None
                 and option != ""
@@ -309,8 +301,6 @@ class Automation(Tab):
                             self.option_controls[option]["control"].value = value
                             with ui.button(icon="help"):
                                 ui.tooltip(self.options[option]["description"])
-                            # if self.options[option]["control"] == "label":
-                        #         self.option_controls[option]["control"].props("readonly")
                         if self.options[option]["required"] is not True:
                             ui.button(icon="remove", on_click=lambda _, option=option: remove_option(option)).tailwind.margin("mr-8")
                 self.build_command()
