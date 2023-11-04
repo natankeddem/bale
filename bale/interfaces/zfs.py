@@ -155,9 +155,7 @@ class Zfs:
         filesystems = await self.filesystems
         if filesystem in filesystems.data.keys():
             if "mountpoint" in filesystems.data[filesystem]:
-                command = (
-                    f"find {filesystems.data[filesystem]['mountpoint']}/.zfs/snapshot -type f -name '{pattern}' -printf '%h\t%f\t%s\t%T@\n'"
-                )
+                command = f"find {filesystems.data[filesystem]['mountpoint']}/.zfs/snapshot -type f -name '{pattern}' -printf '%h\t%f\t%s\t%T@\n'"
                 result = await self.execute(command=command, notify=False)
                 files = []
                 for line in result.stdout_lines:
@@ -203,9 +201,7 @@ class Zfs:
             result = await self.execute("zfs list -Hp -t snapshot -o name,used,creation,userrefs")
             snapshots = dict()
             for line in result.stdout_lines:
-                matches = re.match(
-                    "^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<used_bytes>[^\t]+)\t(?P<creation>[^\t]+)\t(?P<userrefs>[^\n]+)", line
-                )
+                matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<used_bytes>[^\t]+)\t(?P<creation>[^\t]+)\t(?P<userrefs>[^\n]+)", line)
                 if matches is not None:
                     md = matches.groupdict()
                     md["creation_date"] = datetime.fromtimestamp(int(md["creation"])).strftime("%Y/%m/%d")
