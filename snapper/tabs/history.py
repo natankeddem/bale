@@ -13,7 +13,7 @@ class History(Tab):
     def _build(self):
         async def display_result(e):
             if e.args["data"] is not None:
-                result = Result(**e.args["data"])
+                result = Result().from_dict(e.args["data"])
                 await self._display_result(result)
 
         with el.WColumn() as col:

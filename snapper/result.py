@@ -1,6 +1,7 @@
 from typing import Any, List
 from dataclasses import dataclass, field
 from datetime import datetime
+from copy import deepcopy
 import time
 
 
@@ -36,4 +37,24 @@ class Result:
         return "".join(self.stderr_lines)
 
     def to_dict(self):
-        return self.__dict__
+        d = deepcopy(self.__dict__)
+        d["date"] = self.date
+        d["time"] = self.time
+        d["stdout"] = self.stdout
+        d["stderr"] = self.stderr
+        return d
+
+    def from_dict(self, d):
+        self.name = d["name"]
+        self.command = d["command"]
+        self.return_code = d["return_code"]
+        self.stdout_lines = d["stdout_lines"]
+        self.stderr_lines = d["stderr_lines"]
+        self.terminated = d["terminated"]
+        self.data = d["data"]
+        self.failed = d["failed"]
+        self.trace = d["trace"]
+        self.cached = d["cached"]
+        self.status = d["status"]
+        self.timestamp = d["timestamp"]
+        return self
