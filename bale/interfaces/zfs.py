@@ -125,24 +125,36 @@ class Zfs:
             result = Result(data=filesystems, cached=False)
         return result
 
-    async def holds_for_snapshot(self, snapshot: str = "") -> Result:
+    async def holds_for_snapshot(self, snapshot: Union[str, None] = None) -> Result:
         query = "holds_for_snapshot"
         if self.is_query_ready_to_execute(query, 60):
-            result = await self.execute("zfs holds -H -r $(zfs list -t snapshot -H -o name)")
-            tags: Dict[str, list[str]] = {}
-            for line in result.stdout_lines:
-                matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<tag>[^\t]+)\t(?P<creation>[^\n]+)", line)
-                if matches is not None:
-                    md = matches.groupdict()
-                    s = f"{md['filesystem']}@{md['name']}"
-                    if s not in tags:
-                        tags[s] = []
-                    tags[s].append(md["tag"])
-                self._last_data[query] = tags
-                if snapshot in self._last_data[query]:
-                    result.data = self._last_data[query][snapshot]
-                else:
-                    result.data = []
+            with_holds = []
+            if snapshot is None:
+                snapshots = await self.snapshots
+                for _name, _data in snapshots.data.items():
+                    if int(_data["userrefs"]) > 0:
+                        with_holds.append(_name)
+                with_holds = " ".join(with_holds)
+            else:
+                with_holds = [snapshot]
+            if len(with_holds) > 0:
+                result = await self.execute(f"zfs holds -H -r {with_holds}")
+                tags: Dict[str, list[str]] = {}
+                for line in result.stdout_lines:
+                    matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<tag>[^\t]+)\t(?P<creation>[^\n]+)", line)
+                    if matches is not None:
+                        md = matches.groupdict()
+                        s = f"{md['filesystem']}@{md['name']}"
+                        if s not in tags:
+                            tags[s] = []
+                        tags[s].append(md["tag"])
+                    self._last_data[query] = tags
+                    if snapshot in self._last_data[query]:
+                        result.data = self._last_data[query][snapshot]
+                    else:
+                        result.data = []
+            else:
+                return Result(data=[])
         else:
             if snapshot in self._last_data[query]:
                 data = self._last_data[query][snapshot]
