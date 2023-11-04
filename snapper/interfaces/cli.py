@@ -1,50 +1,31 @@
-from typing import Any, Callable, Dict, List, Union
-from dataclasses import dataclass
+from typing import Dict, List, Union
 import asyncio
 from asyncio.subprocess import Process, PIPE
 import contextlib
 import shlex
 from datetime import datetime
-from snapper.result import Result
 from nicegui import app, ui
-from nicegui.element import Element
-from nicegui.events import GenericEventArguments, handle_event
+from snapper.result import Result
 import logging
 
 logger = logging.getLogger(__name__)
 
-app.add_static_files("/static", "static")
-ui.add_head_html('<link href="static/xterm.css" rel="stylesheet">')
-ui.add_head_html('<script type="text/javascript" src="static/xterm.js"></script>')
+
+def load_terminal_css():
+    app.add_static_files("/static", "static")
+    ui.add_head_html('<link href="static/xterm.css" rel="stylesheet">')
 
 
 class Terminal(ui.element, component="../../static/terminal.js", libraries=["../../static/xterm.js"]):  # type: ignore[call-arg]
     def __init__(
         self,
         options: Dict,
-        on_init: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__()
         self._props["options"] = options
-        self.is_initialized = False
-        if on_init:
-
-            def handle_on_init(e: GenericEventArguments) -> None:
-                self.is_initialized = True
-                handle_event(
-                    on_init,
-                    GenericEventArguments(sender=self, client=self.client, args=e),
-                )
-
-            self.on("init", handle_on_init)
 
     def call_terminal_method(self, name: str, *args) -> None:
         self.run_method("call_api_method", name, *args)
-
-    def run_method(self, name: str, *args: Any) -> None:
-        if not self.is_initialized:
-            return
-        super().run_method(name, *args)
 
 
 class Cli:
@@ -108,7 +89,7 @@ class Cli:
         c = shlex.split(command, posix=False)
         try:
             process = await asyncio.create_subprocess_exec(*c, stdout=PIPE, stderr=PIPE)
-            if process.stdout is not None and process.stderr is not None:
+            if process is not None and process.stdout is not None and process.stderr is not None:
                 self.stdout.clear()
                 self.stderr.clear()
                 self._terminate.clear()
@@ -136,7 +117,7 @@ class Cli:
         self._busy = True
         try:
             process = await asyncio.create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
-            if process.stdout is not None and process.stderr is not None:
+            if process is not None and process.stdout is not None and process.stderr is not None:
                 self.stdout.clear()
                 self.stderr.clear()
                 self._terminate.clear()

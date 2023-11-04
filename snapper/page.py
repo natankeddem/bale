@@ -2,6 +2,7 @@ from nicegui import ui
 from snapper import elements as el
 from snapper.drawer import Drawer
 from snapper.content import Content
+from snapper.interfaces import cli
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ def build():
 </style>
 """
         )
+        cli.load_terminal_css()
         ui.colors(
             primary=el.orange,
             secondary=el.orange,

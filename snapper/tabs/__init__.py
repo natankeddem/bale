@@ -39,12 +39,6 @@ class Tab:
         cls._zfs[host] = Ssh(path="data", host=host)
 
     async def _display_result(self, result: Result) -> None:
-        def print_to_terminal(e):
-            for line in result.stdout_lines:
-                e.sender.call_terminal_method("write", line)
-            for line in result.stderr_lines:
-                e.sender.call_terminal_method("write", line)
-
         with ui.dialog() as dialog, el.Card():
             with el.DBody(height="[90vh]", width="[90vw]"):
                 with el.WColumn():
@@ -65,7 +59,11 @@ class Tab:
                     with el.Card() as card:
                         card.tailwind.width("11/12")
                         with el.WColumn():
-                            cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True}, on_init=lambda e: print_to_terminal(e))
+                            terminal = cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True})
+                            for line in result.stdout_lines:
+                                terminal.call_terminal_method("write", line)
+                            for line in result.stderr_lines:
+                                terminal.call_terminal_method("write", line)
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     el.DButton("Exit", on_click=lambda: dialog.submit("exit"))

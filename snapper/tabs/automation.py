@@ -156,7 +156,9 @@ class Automation(Tab):
         with ui.dialog() as dialog, el.Card():
             with el.DBody(height="[90vh]", width="[90vw]"):
                 with el.WColumn():
-                    terminal = cli.Terminal(options={"rows": 30, "cols": 120, "convertEol": True}, on_init=lambda e: register_terminal(e))
+                    terminal = cli.Terminal(options={"rows": 30, "cols": 120, "convertEol": True})
+                    if job_data.args["data"]["name"] in job_handlers:
+                        job_handlers[job_data.args["data"]["name"]].register_terminal(terminal)
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     spinner = el.Spinner()
@@ -164,6 +166,7 @@ class Automation(Tab):
                     el.LgButton("Terminate", on_click=terminate)
                     el.LgButton("Exit", on_click=lambda: dialog.submit("exit"))
                     el.Spinner(master=spinner)
+            spinner.bind_visibility_from(job_handlers[job_data.args["data"]["name"]], "is_busy")
 
         await dialog
         if job_data.args["data"]["name"] in job_handlers:
