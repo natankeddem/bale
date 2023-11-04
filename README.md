@@ -1,4 +1,4 @@
-# snapper: ZFS Snapshot GUI
+# snapper: ZFS Snapshot Browser Based GUI
 
 ## Demo
 https://github.com/natankeddem/snapper/assets/44515217/dfd1257a-7465-4a92-94f2-29eb6aaaa85e
