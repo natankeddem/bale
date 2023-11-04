@@ -53,7 +53,6 @@ class History(Tab):
                             "field": "status",
                             "filter": "agTextColumnFilter",
                             "maxWidth": 100,
-                            # "cellDataType": "text",
                             "cellClassRules": {
                                 "text-red-300": "x == 'error'",
                                 "text-green-300": "x == 'success'",
