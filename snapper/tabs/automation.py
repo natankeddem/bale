@@ -160,7 +160,8 @@ class Automation(Tab):
                     el.LgButton("Terminate", on_click=terminate)
                     el.LgButton("Exit", on_click=lambda: dialog.submit("exit"))
                     el.Spinner(master=spinner)
-            spinner.bind_visibility_from(job_handlers[job_data.args["data"]["name"]], "is_busy")
+            if job_data.args["data"]["name"] in job_handlers:
+                spinner.bind_visibility_from(job_handlers[job_data.args["data"]["name"]], "is_busy")
 
         await dialog
         if job_data.args["data"]["name"] in job_handlers:
