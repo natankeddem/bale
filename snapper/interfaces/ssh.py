@@ -93,21 +93,8 @@ class Ssh:
         self.write_config()
 
     async def execute(self, command: str) -> Result:
-        # self._base_cmd = (
-        #     f"{'' if self.use_key else f'sshpass -p {self.password} '}"
-        #     f"ssh -o IdentitiesOnly=yes"
-        #     f" -F {self._config_path}"
-        #     f" -o StrictHostKeychecking=no"
-        #     f" {self.host}"
-        # )
         self._base_cmd = f"{'' if self.use_key else f'sshpass -p {self.password} '} ssh -F {self._config_path} {self.host}"
         self._full_cmd = f"{self._base_cmd} {command}"
-        # proc = await asyncio.create_subprocess_shell(
-        #     self._full_cmd, shell=True, stderr=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE
-        # )
-        # stdout, stderr = await proc.communicate()
-        # result = self._cli.execute(self._full_cmd)
-        # return Result(command=self._full_cmd, stdout=stdout.decode(), stderr=stderr.decode())
         return await self._cli.execute(self._full_cmd)
 
     async def send_key(self) -> Result:
@@ -117,9 +104,6 @@ class Ssh:
             f"ssh-copy-id -o IdentitiesOnly=yes -i {self._key_path} "
             f"-o StrictHostKeychecking=no {self.username}@{self.hostname}"
         )
-        # proc = await asyncio.create_subprocess_shell(cmd, shell=True, stderr=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE)
-        # stdout, stderr = await proc.communicate()
-        # return Result(command=cmd, stdout=stdout.decode(), stderr=stderr.decode())
         return await self._cli.execute(cmd)
 
     @property
