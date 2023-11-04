@@ -13,6 +13,7 @@ class Automation:
     id: str
     app: str
     hosts: List[str]
+    host: str
     command: str
     schedule_mode: str
     triggers: Dict[str, str]
