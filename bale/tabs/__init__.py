@@ -21,6 +21,45 @@ class Task:
     timestamp: float = field(default_factory=time.time)
 
 
+class SelectionConfirm:
+    def __init__(self, container, label) -> None:
+        self._container = container
+        self._label = label
+        self._visible = None
+        self._result = None
+        self._submitted = None
+        with self._container:
+            self._label = ui.label(self._label).tailwind().text_color("primary")
+            self._done = el.IButton(icon="done", on_click=lambda: self.submit("confirm"))
+            self._cancel = el.IButton(icon="close", on_click=lambda: self.submit("cancel"))
+
+    @property
+    def submitted(self) -> asyncio.Event:
+        if self._submitted is None:
+            self._submitted = asyncio.Event()
+        return self._submitted
+
+    def open(self) -> None:
+        self._container.visible = True
+
+    def close(self) -> None:
+        self._container.visible = False
+        self._container.clear()
+
+    def __await__(self):
+        self._result = None
+        self.submitted.clear()
+        self.open()
+        yield from self.submitted.wait().__await__()  # pylint: disable=no-member
+        result = self._result
+        self.close()
+        return result
+
+    def submit(self, result) -> None:
+        self._result = result
+        self.submitted.set()
+
+
 class Tab:
     _zfs: Dict[str, Ssh] = {}
     _history: List[Result] = []
@@ -29,6 +68,7 @@ class Tab:
     def __init__(self, spinner, host=None) -> None:
         self._spinner: el.Spinner = spinner
         self.host: str = host
+        self._grid: ui.aggrid
         self._build()
 
     def _build(self):
@@ -86,6 +126,28 @@ class Tab:
             if task.timestamp == timestamp:
                 self._tasks.remove(task)
                 return task
+
+    def _set_selection(self, mode=None):
+        row_selection = "single"
+        name_def = {
+            "headerName": "Name",
+            "field": "name",
+            "filter": "agTextColumnFilter",
+            "headerCheckboxSelection": False,
+            "headerCheckboxSelectionFilteredOnly": True,
+            "checkboxSelection": False,
+        }
+        if mode is None:
+            pass
+        elif mode == "single":
+            name_def["checkboxSelection"] = True
+        elif mode == "multiple":
+            row_selection = "multiple"
+            name_def["headerCheckboxSelection"] = True
+            name_def["checkboxSelection"] = True
+        self._grid.options["columnDefs"][0] = name_def
+        self._grid.options["rowSelection"] = row_selection
+        self._grid.update()
 
     @property
     def zfs(self) -> Ssh:
