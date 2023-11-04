@@ -223,7 +223,7 @@ class Automation(Tab):
                         automation_job,
                         trigger=build_triggers(),
                         kwargs={"data": json.dumps(auto.to_dict())},
-                        id=self.auto_name.value,
+                        id=self.auto_name.value.lower(),
                         coalesce=True,
                         max_instances=1,
                         replace_existing=True,
@@ -274,8 +274,8 @@ class Automation(Tab):
         for job in jobs:
             self.job_names.append(job.id)
 
-        def validate_name(n):
-            if len(n) > 0 and (n not in self.job_names or name != ""):
+        def validate_name(n: str):
+            if len(n) > 0 and n.islower() and (n not in self.job_names or name != ""):
                 return True
             return False
 
@@ -354,7 +354,7 @@ class Automation(Tab):
                 for key, value in self.picked_options.items():
                     base = base + f" --{key}{f' {value}' if value != '' else ''}"
                 target_path = f"{f' {self.target_path.value}' if self.target_path.value == '' else ''}"
-                base = base + f" {self.auto_name.value}" + target_path
+                base = base + f" {self.auto_name.value.lower()}" + target_path
                 self.command.value = base
 
             if name == "":
@@ -608,9 +608,9 @@ class Automation(Tab):
             else:
                 hosts = [self.host]
             if self.app.value == "zfs_autobackup":
-                await self._add_prop_to_fs(prop=self.auto_name.value, filesystems=self.filesystems.value)
+                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), filesystems=self.filesystems.value)
                 auto = scheduler.Zfs_Autobackup(
-                    id=self.auto_name.value,
+                    id=self.auto_name.value.lower(),
                     hosts=hosts,
                     command=self.command.value,
                     schedule_mode=self.schedule_mode.value,
@@ -621,29 +621,29 @@ class Automation(Tab):
                     target_paths=self.target_path.options,
                     filesystems=self.filesystems.value,
                 )
-                if self.auto_name.value not in job_handlers:
-                    job_handlers[self.auto_name.value] = cli.Cli()
+                if self.auto_name.value.lower() not in job_handlers:
+                    job_handlers[self.auto_name.value.lower()] = cli.Cli()
             else:
                 auto = scheduler.Automation(
-                    id=self.auto_name.value,
+                    id=self.auto_name.value.lower(),
                     app=self.app.value,
                     hosts=hosts,
                     command=self.command.value,
                     schedule_mode=self.schedule_mode.value,
                     triggers=self.picked_triggers,
                 )
-                if self.auto_name.value not in job_handlers:
-                    job_handlers[self.auto_name.value] = cli.Cli()
+                if self.auto_name.value.lower() not in job_handlers:
+                    job_handlers[self.auto_name.value.lower()] = cli.Cli()
             self.scheduler.scheduler.add_job(
                 automation_job,
                 trigger=build_triggers(),
                 kwargs={"data": json.dumps(auto.to_dict())},
-                id=self.auto_name.value,
+                id=self.auto_name.value.lower(),
                 coalesce=True,
                 max_instances=1,
                 replace_existing=True,
             )
-            el.notify("Automation stored successfully!", position="bottom-right", type="positive")
+            el.notify(f"Automation {self.auto_name.value.lower()} stored successfully!", type="positive")
             self._update_automations()
         elif self.stepper.value == "Application Setup":
             pass
