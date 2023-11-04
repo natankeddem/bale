@@ -145,6 +145,10 @@ class Automation(Tab):
             self._update_automations()
 
     async def _display_job(self, job_data) -> None:
+        for job in self.scheduler.scheduler.get_jobs():
+            if job.id not in job_handlers:
+                job_handlers[job.id] = cli.Cli()
+
         async def run():
             for job in self.scheduler.scheduler.get_jobs():
                 if job.id == job_data.args["data"]["name"]:
@@ -158,7 +162,7 @@ class Automation(Tab):
             with el.DBody(height="fit", width="fit"):
                 with el.WColumn():
                     with el.Card():
-                        terminal = cli.Terminal(options={"rows": 30, "cols": 120, "convertEol": True})
+                        terminal = cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True})
                         if job_data.args["data"]["name"] in job_handlers:
                             job_handlers[job_data.args["data"]["name"]].register_terminal(terminal)
                 with el.WRow() as row:
