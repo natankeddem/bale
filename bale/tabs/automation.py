@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Union
 import asyncio
 from datetime import datetime
 import json
+import string
 from apscheduler.triggers.combining import AndTrigger
 from apscheduler.triggers.combining import OrTrigger
 from apscheduler.triggers.cron import CronTrigger
@@ -19,32 +20,55 @@ from cron_validator import CronValidator
 from cron_descriptor import get_description
 import logging
 
+
 logger = logging.getLogger(__name__)
 
-job_handlers: Dict[str, Any] = {}
+job_handlers: Dict[str, Union[cli.Cli, ssh.Ssh]] = {}
+
+
+def populate_job_handler(app: str, job_id: str, host: str):
+    tab = Tab(host=None, spinner=None)
+    if job_id not in job_handlers:
+        if app == "remote":
+            job_handlers[job_id] = ssh.Ssh("data", host=host)
+        else:
+            job_handlers[job_id] = cli.Cli()
+    return job_handlers[job_id]
+
+
+class CommandTemplate(string.Template):
+    delimiter = ""
 
 
 async def automation_job(**kwargs) -> None:
     if "data" in kwargs:
         jd = json.loads(kwargs["data"])
+        command = CommandTemplate(jd["command"])
         tab = Tab(host=None, spinner=None)
-        if jd["app"] == "local":
-            d = scheduler.Automation(**jd)
-            if d.id not in job_handlers:
-                job_handlers[d.id] = cli.Cli()
+        if jd["app"] == "zfs_autobackup":
+            d = scheduler.Zfs_Autobackup(**jd)
+            populate_job_handler(app=d.app, job_id=d.id, host=d.host)
             if job_handlers[d.id].is_busy is False:
-                result = await job_handlers[d.id].execute(d.command)
-                tab.host = d.hosts[0]
+                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result.name = d.host
                 tab.add_history(result=result)
             else:
                 logger.warning("Job Skipped!")
-        elif jd["app"] == "zfs_autobackup":
-            d = scheduler.Zfs_Autobackup(**jd)
-            if d.id not in job_handlers:
-                job_handlers[d.id] = cli.Cli()
+        elif jd["app"] == "remote":
+            d = scheduler.Automation(**jd)
+            populate_job_handler(app=d.app, job_id=d.id, host=d.host)
             if job_handlers[d.id].is_busy is False:
-                result = await job_handlers[d.id].execute("python -m zfs_autobackup.ZfsAutobackup" + d.command)
-                tab.host = d.hosts[0]
+                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result.name = d.host
+                tab.add_history(result=result)
+            else:
+                logger.warning("Job Skipped!")
+        elif jd["app"] == "local":
+            d = scheduler.Automation(**jd)
+            populate_job_handler(app=d.app, job_id=d.id, host=d.host)
+            if job_handlers[d.id].is_busy is False:
+                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result.name = d.host
                 tab.add_history(result=result)
             else:
                 logger.warning("Job Skipped!")
@@ -145,26 +169,32 @@ class Automation(Tab):
             self._update_automations()
 
     async def _display_job(self, job_data) -> None:
+        job_id = f"{job_data.args['data']['name']}@{self.host}"
+
         for job in self.scheduler.scheduler.get_jobs():
-            if job.id not in job_handlers:
-                job_handlers[job.id] = cli.Cli()
+            if job.id == job_id:
+                if "data" in job.kwargs:
+                    jd = json.loads(job.kwargs["data"])
+                    populate_job_handler(app=jd["app"], job_id=job.id, host=self.host)
+                    break
 
         async def run():
             for job in self.scheduler.scheduler.get_jobs():
-                if job.id == job_data.args["data"]["name"]:
+                if job.id == job_id:
                     job.modify(next_run_time=datetime.now())
+                    break
 
         def terminate():
-            if job_data.args["data"]["name"] in job_handlers:
-                job_handlers[job_data.args["data"]["name"]].terminate()
+            if job_id in job_handlers:
+                job_handlers[job_id].terminate()
 
         with ui.dialog() as dialog, el.Card():
             with el.DBody(height="fit", width="fit"):
                 with el.WColumn():
                     with el.Card():
                         terminal = cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True})
-                        if job_data.args["data"]["name"] in job_handlers:
-                            job_handlers[job_data.args["data"]["name"]].register_terminal(terminal)
+                        if job_id in job_handlers:
+                            job_handlers[job_id].register_terminal(terminal)
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     spinner = el.Spinner()
@@ -172,12 +202,12 @@ class Automation(Tab):
                     el.LgButton("Terminate", on_click=terminate)
                     el.LgButton("Exit", on_click=lambda: dialog.submit("exit"))
                     el.Spinner(master=spinner)
-            if job_data.args["data"]["name"] in job_handlers:
-                spinner.bind_visibility_from(job_handlers[job_data.args["data"]["name"]], "is_busy")
+            if job_id in job_handlers:
+                spinner.bind_visibility_from(job_handlers[job_id], "is_busy")
 
         await dialog
-        if job_data.args["data"]["name"] in job_handlers:
-            job_handlers[job_data.args["data"]["name"]].release_terminal(terminal)
+        if job_id in job_handlers:
+            job_handlers[job_id].release_terminal(terminal)
 
     def _update_automations(self) -> None:
         self._automations.clear()
@@ -190,10 +220,10 @@ class Automation(Tab):
                 next_run_time = "NA"
             if "data" in job.kwargs:
                 jd = json.loads(job.kwargs["data"])
-                if self.host in jd["hosts"]:
+                if self.host == jd["host"]:
                     self._automations.append(
                         {
-                            "name": job.id,
+                            "name": job.id.split("@")[0],
                             "command": jd["command"],
                             "next_run_date": next_run_date,
                             "next_run_time": next_run_time,
@@ -205,16 +235,21 @@ class Automation(Tab):
     async def _remove_automation(self) -> None:
         rows = await self._grid.get_selected_rows()
         if len(rows) == 1:
-            self.scheduler.scheduler.remove_job(rows[0]["name"])
+            for job in self.scheduler.scheduler.get_jobs():
+                j = job.id.split("@")[0]
+                if j == rows[0]["name"]:
+                    self.scheduler.scheduler.remove_job(job.id)
             self._automations.remove(rows[0])
             self._grid.update()
 
     async def _run_automation(self) -> None:
         rows = await self._grid.get_selected_rows()
         if len(rows) == 1:
+            job_id = f"{rows[0]['name']}@{self.host}"
             for job in self.scheduler.scheduler.get_jobs():
-                if job.id == rows[0]["name"]:
+                if job_id == job.id:
                     job.modify(next_run_time=datetime.now())
+                    break
 
     async def _duplicate_automation(self) -> None:
         rows = await self._grid.get_selected_rows()
@@ -246,6 +281,7 @@ class Automation(Tab):
 
     async def _add_prop_to_fs(
         self,
+        host: str,
         prop: str,
         value: str,
         module: str = "autobackup",
@@ -253,18 +289,16 @@ class Automation(Tab):
     ) -> None:
         if filesystems is not None:
             full_prop = f"{module}:{prop}"
-            filesystems_with_prop_result = await self.zfs.filesystems_with_prop(full_prop)
-            filesystems_with_prop = list(filesystems_with_prop_result.data)
             for fs in filesystems:
-                result = await self.zfs.add_filesystem_prop(filesystem=fs, prop=full_prop, value=value)
+                result = await self._zfs[host].add_filesystem_prop(filesystem=fs, prop=full_prop, value=value)
                 self.add_history(result=result)
 
-    async def _remove_prop_from_all_fs(self, prop: str, module: str = "autobackup") -> None:
+    async def _remove_prop_from_all_fs(self, host: str, prop: str, module: str = "autobackup") -> None:
         full_prop = f"{module}:{prop}"
-        filesystems_with_prop_result = await self.zfs.filesystems_with_prop(full_prop)
+        filesystems_with_prop_result = await self._zfs[host].filesystems_with_prop(full_prop)
         filesystems_with_prop = list(filesystems_with_prop_result.data)
         for fs in filesystems_with_prop:
-            result = await self.zfs.remove_filesystem_prop(filesystem=fs, prop=full_prop)
+            result = await self._zfs[host].remove_filesystem_prop(filesystem=fs, prop=full_prop)
             self.add_history(result=result)
 
     async def _create_automation(self, name: str = "") -> None:
@@ -274,18 +308,18 @@ class Automation(Tab):
         self.triggers = {}
         self.picked_triggers = {}
         self.job_data = {}
-        if name != "":
-            job = self.scheduler.scheduler.get_job(name)
-            self.job_data.update(json.loads(job.kwargs["data"]))
-        else:
-            job = None
         jobs = self.scheduler.scheduler.get_jobs()
         self.job_names = []
+        job = None
         for job in jobs:
-            self.job_names.append(job.id)
+            j = job.id.split("@")[0]
+            self.job_names.append(j)
+            if name == j:
+                job = self.scheduler.scheduler.get_job(job.id)
+                self.job_data.update(json.loads(job.kwargs["data"]))
 
         def validate_name(n: str):
-            if len(n) > 0 and n.islower() and (n not in self.job_names or name != ""):
+            if len(n) > 0 and n.islower() and "@" not in n and (n not in self.job_names or name != ""):
                 return True
             return False
 
@@ -318,7 +352,7 @@ class Automation(Tab):
             del self.option_controls[option]
             self.build_command()
 
-        def set_option(option, value):
+        def set_option(option, value: str):
             self.picked_options[option] = value
             self.build_command()
 
@@ -417,7 +451,7 @@ class Automation(Tab):
                 self.default_options = {
                     "verbose": "",
                     "clear-mountpoint": "",
-                    "ssh-source": self.zfs.host,
+                    "ssh-source": "{host}",
                     "ssh-config": self.zfs.config_path,
                 }
             else:
@@ -425,14 +459,16 @@ class Automation(Tab):
             self.options = zab.options
             self.build_command = build_command
             filesystems = await self.zfs.filesystems
-            hosts = [""]
-            hosts.extend(self._zfs_hosts)
+            target_host = [""]
+            source_hosts = []
+            target_host.extend(self._zfs_hosts)
+            source_hosts.extend(self._zfs_hosts)
             with ui.row().classes("col") as row:
                 row.tailwind.width("[860px]").justify_content("center")
                 with ui.column() as col:
                     col.tailwind.height("full").width("[420px]")
-                    self.source_hosts = el.DSelect(hosts, label="Source Host(s)")
-                    self.target_host = el.DSelect(hosts, label="Target Host", on_change=target_host_selected)
+                    self.hosts = el.DSelect(source_hosts, label="Source Host(s)", multiple=True, with_input=True)
+                    self.target_host = el.DSelect(target_host, label="Target Host", on_change=target_host_selected)
                     self.target_paths = [""]
                     self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", on_change=target_path_selected)
                     all_fs_to_lists()
@@ -480,6 +516,9 @@ class Automation(Tab):
                 self.parent.value = self.fs["values"].get("parent", None)
                 self.children.value = self.fs["values"].get("children", None)
                 self.exclude.value = self.fs["values"].get("exclude", None)
+                self.hosts.value = self.job_data.get("hosts", [self.host])
+            else:
+                self.hosts.value = [self.host]
 
         def options_controls():
             with ui.row() as row:
@@ -694,56 +733,96 @@ class Automation(Tab):
         result = await automation_dialog
         if result == "save":
             auto: Union[scheduler.Automation, scheduler.Zfs_Autobackup]
+            auto_name = self.auto_name.value.lower()
             if hasattr(self, "hosts"):
                 hosts = self.hosts.value
             else:
                 hosts = [self.host]
             if self.app.value == "zfs_autobackup":
-                await self._remove_prop_from_all_fs(prop=self.auto_name.value.lower())
-                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="true", filesystems=self.parentchildren.value)
-                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="parent", filesystems=self.parent.value)
-                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="child", filesystems=self.children.value)
-                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="false", filesystems=self.exclude.value)
-                self.fs["values"] = {}
-                self.fs["values"]["parentchildren"] = self.parentchildren.value
-                self.fs["values"]["parent"] = self.parent.value
-                self.fs["values"]["children"] = self.children.value
-                self.fs["values"]["exclude"] = self.exclude.value
-                auto = scheduler.Zfs_Autobackup(
-                    id=self.auto_name.value.lower(),
-                    hosts=hosts,
-                    command=self.command.value,
-                    schedule_mode=self.schedule_mode.value,
-                    triggers=self.picked_triggers,
-                    options=self.picked_options,
-                    target_host=self.target_host.value,
-                    target_path=self.target_path.value,
-                    target_paths=self.target_path.options,
-                    filesystems=self.fs,
-                )
-                if self.auto_name.value.lower() not in job_handlers:
-                    job_handlers[self.auto_name.value.lower()] = cli.Cli()
-            else:
+                for job in jobs:
+                    j = job.id.split("@")[0]
+                    if j == auto_name:
+                        self.scheduler.scheduler.remove_job(job.id)
+                for host in hosts:
+                    auto_id = f"{auto_name}@{host}"
+                    await self._remove_prop_from_all_fs(host=host, prop=auto_name)
+                    await self._add_prop_to_fs(host=host, prop=auto_name, value="true", filesystems=self.parentchildren.value)
+                    await self._add_prop_to_fs(host=host, prop=auto_name, value="parent", filesystems=self.parent.value)
+                    await self._add_prop_to_fs(host=host, prop=auto_name, value="child", filesystems=self.children.value)
+                    await self._add_prop_to_fs(host=host, prop=auto_name, value="false", filesystems=self.exclude.value)
+                    self.fs["values"] = {}
+                    self.fs["values"]["parentchildren"] = self.parentchildren.value
+                    self.fs["values"]["parent"] = self.parent.value
+                    self.fs["values"]["children"] = self.children.value
+                    self.fs["values"]["exclude"] = self.exclude.value
+                    auto = scheduler.Zfs_Autobackup(
+                        id=auto_id,
+                        hosts=hosts,
+                        host=host,
+                        command="python -m zfs_autobackup.ZfsAutobackup" + self.command.value,
+                        schedule_mode=self.schedule_mode.value,
+                        triggers=self.picked_triggers,
+                        options=self.picked_options,
+                        target_host=self.target_host.value,
+                        target_path=self.target_path.value,
+                        target_paths=self.target_path.options,
+                        filesystems=self.fs,
+                    )
+                    self.scheduler.scheduler.add_job(
+                        automation_job,
+                        trigger=build_triggers(),
+                        kwargs={"data": json.dumps(auto.to_dict())},
+                        id=auto_id,
+                        coalesce=True,
+                        max_instances=1,
+                        replace_existing=True,
+                    )
+            elif self.app.value == "remote":
+                for job in jobs:
+                    j = job.id.split("@")[0]
+                    if j == auto_name:
+                        self.scheduler.scheduler.remove_job(job.id)
+                for host in hosts:
+                    auto_id = f"{auto_name}@{host}"
+                    auto = scheduler.Automation(
+                        id=auto_id,
+                        app=self.app.value,
+                        hosts=hosts,
+                        host=host,
+                        command=self.command.value,
+                        schedule_mode=self.schedule_mode.value,
+                        triggers=self.picked_triggers,
+                    )
+                    self.scheduler.scheduler.add_job(
+                        automation_job,
+                        trigger=build_triggers(),
+                        kwargs={"data": json.dumps(auto.to_dict())},
+                        id=auto_id,
+                        coalesce=True,
+                        max_instances=1,
+                        replace_existing=True,
+                    )
+            elif self.app.value == "local":
+                auto_id = f"{auto_name}@{self.host}"
                 auto = scheduler.Automation(
-                    id=self.auto_name.value.lower(),
+                    id=auto_id,
                     app=self.app.value,
                     hosts=hosts,
+                    host=self.host,
                     command=self.command.value,
                     schedule_mode=self.schedule_mode.value,
                     triggers=self.picked_triggers,
                 )
-                if self.auto_name.value.lower() not in job_handlers:
-                    job_handlers[self.auto_name.value.lower()] = cli.Cli()
-            self.scheduler.scheduler.add_job(
-                automation_job,
-                trigger=build_triggers(),
-                kwargs={"data": json.dumps(auto.to_dict())},
-                id=self.auto_name.value.lower(),
-                coalesce=True,
-                max_instances=1,
-                replace_existing=True,
-            )
-            el.notify(f"Automation {self.auto_name.value.lower()} stored successfully!", type="positive")
+                self.scheduler.scheduler.add_job(
+                    automation_job,
+                    trigger=build_triggers(),
+                    kwargs={"data": json.dumps(auto.to_dict())},
+                    id=auto_id,
+                    coalesce=True,
+                    max_instances=1,
+                    replace_existing=True,
+                )
+            el.notify(f"Automation {auto_name} stored successfully!", type="positive")
             self._update_automations()
         elif self.stepper.value == "Application Setup":
             pass
