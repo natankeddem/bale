@@ -40,10 +40,10 @@ class Tab:
 
     async def _display_result(self, result: Result) -> None:
         with ui.dialog() as dialog, el.Card():
-            with el.DBody(height="[90vh]", width="[90vw]"):
+            with el.DBody(height="fit", width="fit"):
                 with el.WColumn():
                     with el.Card() as card:
-                        card.tailwind.width("11/12")
+                        card.tailwind.width("full")
                         with el.WRow() as row:
                             row.tailwind.justify_content("around")
                             with ui.column() as col:
@@ -57,7 +57,6 @@ class Tab:
                                 ui.label(f"Data is cached: {result.cached}").classes("text-secondary")
                                 ui.label(f"Time: {result.time}").classes("text-secondary")
                     with el.Card() as card:
-                        card.tailwind.width("11/12")
                         with el.WColumn():
                             terminal = cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True})
                             for line in result.stdout_lines:

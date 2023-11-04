@@ -110,11 +110,9 @@ class Automation(Tab):
                         {
                             "headerName": "Name",
                             "field": "name",
-                            "headerCheckboxSelection": True,
-                            "headerCheckboxSelectionFilteredOnly": True,
                             "checkboxSelection": True,
                             "filter": "agTextColumnFilter",
-                            "maxWidth": 110,
+                            "maxWidth": 150,
                         },
                         {"headerName": "Command", "field": "command", "filter": "agTextColumnFilter"},
                         {"headerName": "Next Date", "field": "next_run_date", "filter": "agDateColumnFilter", "maxWidth": 100},
@@ -149,11 +147,12 @@ class Automation(Tab):
                 job_handlers[job_data.args["data"]["name"]].terminate()
 
         with ui.dialog() as dialog, el.Card():
-            with el.DBody(height="[90vh]", width="[90vw]"):
+            with el.DBody(height="fit", width="fit"):
                 with el.WColumn():
-                    terminal = cli.Terminal(options={"rows": 30, "cols": 120, "convertEol": True})
-                    if job_data.args["data"]["name"] in job_handlers:
-                        job_handlers[job_data.args["data"]["name"]].register_terminal(terminal)
+                    with el.Card():
+                        terminal = cli.Terminal(options={"rows": 30, "cols": 120, "convertEol": True})
+                        if job_data.args["data"]["name"] in job_handlers:
+                            job_handlers[job_data.args["data"]["name"]].register_terminal(terminal)
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     spinner = el.Spinner()
