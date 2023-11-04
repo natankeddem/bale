@@ -4,7 +4,8 @@ from nicegui import ui
 from . import Tab, Task
 from snapper.result import Result
 from snapper import elements as el
-import snapper.interfaces.zfs as zfs
+from snapper.interfaces import zfs
+from snapper.interfaces import sshdl
 import logging
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,7 @@ class Manage(Tab):
                     el.SmButton(text="Rename", on_click=self._rename_snapshot)
                     el.SmButton(text="Hold", on_click=self._hold_snapshot)
                     el.SmButton(text="Release", on_click=self._release_snapshot)
+                    el.SmButton(text="Download", on_click=self._download)
                 with ui.row().classes("items-center"):
                     self._auto = ui.checkbox("Auto")
                     self._auto.props(f"left-label keep-color color=primary")
@@ -121,6 +123,20 @@ class Manage(Tab):
         self._grid.options["columnDefs"][0] = name_def
         self._grid.options["rowSelection"] = row_selection
         self._grid.update()
+
+    async def _download(self) -> None:
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">DOWNLOAD<")
+        if result == "confirm":
+            rows = await self._grid.get_selected_rows()
+            filesystems = await self.zfs.filesystems
+            mount_path = filesystems.data[rows[0]["filesystem"]]["mountpoint"]
+            await sshdl.SshFileDownload(
+                path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}",
+                hostname=self.zfs.hostname,
+                username=self.zfs.username,
+                key_path=self.zfs.key_path,
+            )
 
     async def _create_snapshot(self):
         with ui.dialog() as dialog, el.Card():
