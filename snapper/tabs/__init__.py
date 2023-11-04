@@ -71,6 +71,8 @@ class Tab:
     def add_history(self, result: Result) -> None:
         result.status = "error" if result.failed else "success"
         r = result.to_dict()
+        if len(self._history) > 1000:
+            self._history.pop(0)
         self._history.append(r)
 
     def _add_task(self, action: str, command: str, hosts: Union[List[str], None] = None) -> None:
