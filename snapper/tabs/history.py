@@ -29,7 +29,7 @@ class History(Tab):
                     "rowSelection": "multiple",
                     "paginationAutoPageSize": True,
                     "pagination": True,
-                    "defaultColDef": {"flex": 1, "resizable": True, "sortable": True},
+                    "defaultColDef": {"resizable": True, "sortable": True, "suppressMovable": True, "sortingOrder": ["asc", "desc"]},
                     "columnDefs": [
                         {
                             "headerName": "Host",
@@ -46,8 +46,8 @@ class History(Tab):
                             "filter": "agTextColumnFilter",
                             "flex": 1,
                         },
-                        {"headerName": "Date", "field": "date", "filter": "agDateColumnFilter"},
-                        {"headerName": "Time", "field": "time"},
+                        {"headerName": "Date", "field": "date", "filter": "agDateColumnFilter", "maxWidth": 100},
+                        {"headerName": "Time", "field": "time", "maxWidth": 100},
                         {
                             "headerName": "Status",
                             "field": "status",
