@@ -290,12 +290,7 @@ class Automation(Tab):
             return False
 
         def add_option(option, value=""):
-            if (
-                option is not None
-                and option != ""
-                and option not in self.picked_options
-                and not (self.options[option]["required"] is True and value == "")
-            ):
+            if option is not None and option != "" and option not in self.picked_options and not (self.options[option]["required"] is True and value == ""):
                 with self.options_scroll:
                     with ui.row() as option_row:
                         option_row.tailwind(tw_rows)
@@ -334,7 +329,8 @@ class Automation(Tab):
             filesystems = await self.zfs.filesystems
             if isinstance(self.job_data.get("filesystems", {}), dict):
                 self.fs = self.job_data.get(
-                    "filesystems", {"all": {}, "values": {}, "parent": [], "children": [], "parentchildren": [], "exclude": []}
+                    "filesystems",
+                    {"all": {}, "values": {}, "parent": [], "children": [], "parentchildren": [], "exclude": []},
                 )
             else:
                 self.fs = {"all": {}, "values": {}, "parent": [], "children": [], "parentchildren": [], "exclude": []}
@@ -435,6 +431,7 @@ class Automation(Tab):
                 row.tailwind.width("[860px]").justify_content("center")
                 with ui.column() as col:
                     col.tailwind.height("full").width("[420px]")
+                    self.source_hosts = el.DSelect(hosts, label="Source Host(s)")
                     self.target_host = el.DSelect(hosts, label="Target Host", on_change=target_host_selected)
                     self.target_paths = [""]
                     self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", on_change=target_path_selected)
@@ -489,9 +486,7 @@ class Automation(Tab):
                 row.tailwind(tw_rows)
                 with ui.row() as row:
                     row.tailwind.align_items("center")
-                    self.current_option = el.FSelect(
-                        list(self.options.keys()), label="Option", with_input=True, on_change=lambda e: option_changed(e)
-                    )
+                    self.current_option = el.FSelect(list(self.options.keys()), label="Option", with_input=True, on_change=lambda e: option_changed(e))
                     with ui.button(icon="help"):
                         self.current_help = ui.tooltip("")
                 ui.button(icon="add", on_click=lambda: add_option(self.current_option.value)).tailwind.margin("mr-8")
@@ -634,9 +629,7 @@ class Automation(Tab):
         def string_to_interval(string: str):
             interval = string.split(":", 4)
             interval = interval + ["0"] * (5 - len(interval))
-            return IntervalTrigger(
-                weeks=int(interval[0]), days=int(interval[1]), hours=int(interval[2]), minutes=int(interval[3]), seconds=int(interval[4])
-            )
+            return IntervalTrigger(weeks=int(interval[0]), days=int(interval[1]), hours=int(interval[2]), minutes=int(interval[3]), seconds=int(interval[4]))
 
         def build_triggers():
             combine = AndTrigger if self.schedule_mode.value == "And" else OrTrigger
@@ -673,9 +666,7 @@ class Automation(Tab):
                                             value="zfs_autobackup",
                                             label="Application",
                                         )
-                                    self.schedule_mode = el.DSelect(
-                                        ["Or", "And"], value="Or", label="Schedule Mode", on_change=schedule_mode_change
-                                    )
+                                    self.schedule_mode = el.DSelect(["Or", "And"], value="Or", label="Schedule Mode", on_change=schedule_mode_change)
                                     triggers_col = el.WColumn().classes("col")
                                     with triggers_col:
                                         trigger_controls()
