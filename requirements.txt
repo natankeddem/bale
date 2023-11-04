@@ -5,3 +5,4 @@ cron-validator==1.0.8
 nicegui==1.3.18
 zfs-autobackup==3.2
 netifaces==0.11.0
+asyncssh==2.14.0
