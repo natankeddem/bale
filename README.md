@@ -1,8 +1,7 @@
 # bale: ZFS Snapshot Browser Based GUI
 
 ## Demo
-
-https://github.com/natankeddem/bale/assets/44515217/dfd1257a-7465-4a92-94f2-29eb6aaaa85e
+https://github.com/natankeddem/bale/assets/44515217/e1f3ed79-7a63-4560-afdf-f6370b8f1571
 
 ## ⚠️ **_WARNING_**
 
