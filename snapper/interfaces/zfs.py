@@ -150,6 +150,30 @@ class Zfs:
             result = Result(data=data, cached=True)
         return result
 
+    async def find_files_in_snapshots(self, filesystem: str, pattern: str) -> Result:
+        filesystems = await self.filesystems
+        if filesystem in filesystems.data.keys():
+            if "mountpoint" in filesystems.data[filesystem]:
+                command = (
+                    f"find {filesystems.data[filesystem]['mountpoint']}/.zfs/snapshot -type f -name '{pattern}' -printf '%h\t%f\t%s\t%T@\n'"
+                )
+                result = await self.execute(command=command, notify=False)
+                files = []
+                for line in result.stdout_lines:
+                    matches = re.match(
+                        "^(?P<location>[^\t]+)\t(?P<name>[^\t]+)\t(?P<bytes>[^\t]+)\t(?P<modified_timestamp>[^\n]+)",
+                        line,
+                    )
+                    if matches is not None:
+                        md = matches.groupdict()
+                        md["path"] = f"{md['location']}/{md['name']}"
+                        md["size"] = format_bytes(int(md["bytes"]))
+                        md["modified_datetime"] = datetime.fromtimestamp(float(md["modified_timestamp"])).strftime("%Y/%m/%d %H:%M:%S")
+                        files.append(md)
+                result.data = files
+                return result
+        return Result()
+
     @property
     async def filesystems(self) -> Result:
         query = "filesystems"
