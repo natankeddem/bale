@@ -28,10 +28,9 @@ async def get_public_key(path: str) -> str:
         return reader.read()
 
 
-class Ssh:
-    def __init__(
-        self, path: str, host: str, hostname: str = "", username: str = "", password: Union[str, None] = None, seperator: bytes = b"\n"
-    ) -> None:
+class Ssh(Cli):
+    def __init__(self, path: str, host: str, hostname: str = "", username: str = "", password: Union[str, None] = None, seperator: bytes = b"\n") -> None:
+        super().__init__(seperator=seperator)
         self._raw_path: str = path
         self._path: Path = Path(path).resolve()
         self.host: str = host
@@ -42,7 +41,7 @@ class Ssh:
         self.key_path: str = f"{self._path}/id_rsa"
         self._base_cmd: str = ""
         self._full_cmd: str = ""
-        self._cli = Cli(seperator=seperator)
+        # self._cli = Cli(seperator=seperator)
         self._config_path: str = f"{self._path}/config"
         self._config: Dict[str, Dict[str, str]] = {}
         self.read_config()
@@ -95,16 +94,12 @@ class Ssh:
     async def execute(self, command: str) -> Result:
         self._base_cmd = f"{'' if self.use_key else f'sshpass -p {self.password} '} ssh -F {self._config_path} {self.host}"
         self._full_cmd = f"{self._base_cmd} {command}"
-        return await self._cli.execute(self._full_cmd)
+        return await super().execute(self._full_cmd)
 
     async def send_key(self) -> Result:
         await get_public_key(self._raw_path)
-        cmd = (
-            f"sshpass -p {self.password} "
-            f"ssh-copy-id -o IdentitiesOnly=yes -i {self.key_path} "
-            f"-o StrictHostKeychecking=no {self.username}@{self.hostname}"
-        )
-        return await self._cli.execute(cmd)
+        cmd = f"sshpass -p {self.password} " f"ssh-copy-id -o IdentitiesOnly=yes -i {self.key_path} " f"-o StrictHostKeychecking=no {self.username}@{self.hostname}"
+        return await super().execute(cmd)
 
     @property
     def config_path(self):
