@@ -7,7 +7,7 @@ from apscheduler.triggers.combining import AndTrigger
 from apscheduler.triggers.combining import OrTrigger
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
-from . import Tab
+from . import SelectionConfirm, Tab
 from nicegui import ui, Tailwind, events
 from bale import elements as el
 from bale.result import Result
@@ -114,7 +114,9 @@ class Automation(Tab):
     def _build(self) -> None:
         with el.WColumn() as col:
             col.tailwind.height("full")
-            with el.WRow().classes("justify-between"):
+            self._confirm = el.WRow()
+            self._confirm.visible = False
+            with el.WRow().classes("justify-between").bind_visibility_from(self._confirm, "visible", value=False):
                 with ui.row().classes("items-center"):
                     el.SmButton("Create", on_click=self._create_automation)
                     el.SmButton("Remove", on_click=self._remove_automation)
@@ -142,7 +144,6 @@ class Automation(Tab):
                         {
                             "headerName": "Name",
                             "field": "name",
-                            "checkboxSelection": True,
                             "filter": "agTextColumnFilter",
                             "maxWidth": 150,
                         },
@@ -233,23 +234,30 @@ class Automation(Tab):
         self._grid.update()
 
     async def _remove_automation(self) -> None:
-        rows = await self._grid.get_selected_rows()
-        if len(rows) == 1:
-            for job in self.scheduler.scheduler.get_jobs():
-                j = job.id.split("@")[0]
-                if j == rows[0]["name"]:
-                    self.scheduler.scheduler.remove_job(job.id)
-            self._automations.remove(rows[0])
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">REMOVE<")
+        if result == "confirm":
+            rows = await self._grid.get_selected_rows()
+            for row in rows:
+                for job in self.scheduler.scheduler.get_jobs():
+                    j = job.id.split("@")[0]
+                    if j == row["name"]:
+                        self.scheduler.scheduler.remove_job(job.id)
+                self._automations.remove(row)
             self._grid.update()
+        self._set_selection()
 
     async def _run_automation(self) -> None:
-        rows = await self._grid.get_selected_rows()
-        if len(rows) == 1:
-            job_id = f"{rows[0]['name']}@{self.host}"
-            for job in self.scheduler.scheduler.get_jobs():
-                if job_id == job.id:
-                    job.modify(next_run_time=datetime.now())
-                    break
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">RUN<")
+        if result == "confirm":
+            rows = await self._grid.get_selected_rows()
+            for row in rows:
+                job_id = f"{row['name']}@{self.host}"
+                for job in self.scheduler.scheduler.get_jobs():
+                    if job_id == job.id:
+                        job.modify(next_run_time=datetime.now())
+        self._set_selection()
 
     async def _duplicate_automation(self) -> None:
         rows = await self._grid.get_selected_rows()
@@ -275,9 +283,12 @@ class Automation(Tab):
                     )
 
     async def _edit_automation(self) -> None:
-        rows = await self._grid.get_selected_rows()
-        if len(rows) > 0:
+        self._set_selection(mode="single")
+        result = await SelectionConfirm(container=self._confirm, label=">EDIT<")
+        if result == "confirm":
+            rows = await self._grid.get_selected_rows()
             await self._create_automation(rows[0]["name"])
+        self._set_selection()
 
     async def _add_prop_to_fs(
         self,
