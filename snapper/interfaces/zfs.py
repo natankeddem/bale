@@ -118,7 +118,7 @@ class Zfs:
             matches = re.match("^(?P<name>[^\t]+)\t(?P<property>[^\t]+)\t(?P<value>[^\t]+)\t(?P<source>[^\n]+)", line)
             if matches is not None:
                 md = matches.groupdict()
-                if md["property"] == prop and (md["value"] == "true" or md["value"] == "parent") and md["source"] == "local":
+                if md["property"] == prop and md["source"] == "local":
                     filesystems.append(md["name"])
             result = Result(data=filesystems, cached=False)
         return result
