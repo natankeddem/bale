@@ -1,0 +1,10 @@
+[Unit]
+Description=Snapper Application Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/root/snapper/venv/bin/python /root/snapper/main.py
+
+[Install]
+WantedBy=multi-user.target

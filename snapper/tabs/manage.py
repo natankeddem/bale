@@ -1,0 +1,386 @@
+import asyncio
+from copy import deepcopy
+from nicegui import ui
+from . import Tab, Task
+from snapper.result import Result
+from snapper import elements as el
+import snapper.interfaces.zfs as zfs
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class SelectionConfirm:
+    def __init__(self, container, label) -> None:
+        self._container = container
+        self._label = label
+        self._visible = None
+        self._result = None
+        self._submitted = None
+        with self._container:
+            self._label = ui.label(self._label).tailwind().text_color("primary")
+            self._done = el.IButton(icon="done", on_click=lambda: self.submit("confirm"))
+            self._cancel = el.IButton(icon="close", on_click=lambda: self.submit("cancel"))
+
+    @property
+    def submitted(self) -> asyncio.Event:
+        if self._submitted is None:
+            self._submitted = asyncio.Event()
+        return self._submitted
+
+    def open(self) -> None:
+        self._container.visible = True
+
+    def close(self) -> None:
+        self._container.visible = False
+        self._container.clear()
+
+    def __await__(self):
+        self._result = None
+        self.submitted.clear()
+        self.open()
+        yield from self.submitted.wait().__await__()  # pylint: disable=no-member
+        result = self._result
+        self.close()
+        return result
+
+    def submit(self, result) -> None:
+        self._result = result
+        self.submitted.set()
+
+
+class Manage(Tab):
+    def _build(self):
+        with el.WColumn() as col:
+            col.tailwind.height("full")
+            self._confirm = el.WRow()
+            self._confirm.visible = False
+            with el.WRow().classes("justify-between").bind_visibility_from(self._confirm, "visible", value=False):
+                with ui.row().classes("items-center"):
+                    el.SmButton(text="Create", on_click=self._create_snapshot)
+                    el.SmButton(text="Destroy", on_click=self._destroy_snapshot)
+                    el.SmButton(text="Rename", on_click=self._rename_snapshot)
+                    el.SmButton(text="Hold", on_click=self._hold_snapshot)
+                    el.SmButton(text="Release", on_click=self._release_snapshot)
+                with ui.row().classes("items-center"):
+                    self._auto = ui.checkbox("Auto")
+                    self._auto.props(f"left-label keep-color color=primary")
+                    self._auto.tailwind.text_color("primary")
+                    el.SmButton(text="Tasks", on_click=self._display_tasks)
+                    el.SmButton(text="Refresh", on_click=self.display_snapshots)
+            self._grid = ui.aggrid(
+                {
+                    "suppressRowClickSelection": True,
+                    "rowSelection": "multiple",
+                    "paginationAutoPageSize": True,
+                    "pagination": True,
+                    "defaultColDef": {"flex": 1, "resizable": True, "sortable": True},
+                    "columnDefs": [
+                        {"headerName": "Name", "field": "name", "filter": "agTextColumnFilter"},
+                        {"headerName": "Filesystem", "field": "filesystem", "filter": "agTextColumnFilter"},
+                        {"headerName": "Used", "field": "used"},
+                        {"headerName": "Used Bytes", "field": "used_bytes", "filter": "agNumberColumnFilter"},
+                        {"headerName": "Creation Date", "field": "creation_date", "filter": "agDateColumnFilter"},
+                        {"headerName": "Creation Time", "field": "creation_time"},
+                        {"headerName": "Holds", "field": "userrefs", "filter": "agNumberColumnFilter"},
+                    ],
+                    "rowData": [],
+                },
+                theme="balham-dark",
+            )
+            self._grid.tailwind().width("full").height("5/6")
+
+    async def display_snapshots(self):
+        self._spinner.visible = True
+        self.zfs.invalidate_query()
+        snapshots = await self.zfs.snapshots
+        await self.zfs.filesystems
+        await self.zfs.holds_for_snapshot()
+        self._grid.options["rowData"] = list(snapshots.data.values())
+        self._grid.update()
+        self._spinner.visible = False
+
+    def _set_selection(self, mode=None):
+        row_selection = "single"
+        name_def = {
+            "headerName": "Name",
+            "field": "name",
+            "filter": "agTextColumnFilter",
+            "headerCheckboxSelection": False,
+            "headerCheckboxSelectionFilteredOnly": True,
+            "checkboxSelection": False,
+        }
+        if mode is None:
+            pass
+        elif mode == "single":
+            name_def["checkboxSelection"] = True
+        elif mode == "multiple":
+            row_selection = "multiple"
+            name_def["headerCheckboxSelection"] = True
+            name_def["checkboxSelection"] = True
+        self._grid.options["columnDefs"][0] = name_def
+        self._grid.options["rowSelection"] = row_selection
+        self._grid.update()
+
+    async def _create_snapshot(self):
+        with ui.dialog() as dialog, el.Card():
+            self._spinner.visible = True
+            with el.DBody():
+                with el.WColumn():
+                    zfs_hosts = el.DSelect(self._zfs_hosts, value=[self.host], with_input=True, multiple=True, label="Hosts")
+                    filesystem_list = await self.zfs.filesystems
+                    filesystem_list = list(filesystem_list.data.keys())
+                    filesystems = el.DSelect(filesystem_list, with_input=True, multiple=True, label="Filesystems")
+                    name = el.DInput(label="Name")
+                    recursive = el.DCheckbox("Recursive")
+                with el.WRow():
+                    el.DButton("Create", on_click=lambda: dialog.submit("create"))
+                self._spinner.visible = False
+
+        result = await dialog
+        if result == "create":
+            for filesystem in filesystems.value:
+                self._add_task(
+                    "create",
+                    zfs.SnapshotCreate(name=f"{filesystem}@{name.value}", recursive=recursive.value).command,
+                    hosts=zfs_hosts.value,
+                )
+
+    async def _destroy_snapshot(self):
+        with ui.dialog() as dialog, el.Card():
+            with el.DBody():
+                with el.WColumn():
+                    zfs_hosts = el.DSelect(self._zfs_hosts, value=[self.host], with_input=True, multiple=True, label="Hosts")
+                    recursive = el.DCheckbox("Recursive")
+                with el.WRow():
+                    el.DButton("Destroy", on_click=lambda: dialog.submit("destroy"))
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">DESTROY<")
+        if result == "confirm":
+            result = await dialog
+            if result == "destroy":
+                rows = await self._grid.get_selected_rows()
+                for row in rows:
+                    self._add_task(
+                        "destroy",
+                        zfs.SnapshotDestroy(name=f"{row['filesystem']}@{row['name']}", recursive=recursive.value).command,
+                        hosts=zfs_hosts.value,
+                    )
+        self._set_selection()
+
+    async def _rename_snapshot(self):
+        with ui.dialog() as dialog, el.Card():
+            with el.DBody():
+                with el.WColumn():
+                    zfs_hosts = el.DSelect(self._zfs_hosts, value=[self.host], with_input=True, multiple=True, label="Hosts")
+                    mode = el.DSelect(["full", "replace"], value="full", label="Mode")
+                    recursive = el.DCheckbox("Recursive")
+                    new_name = el.DInput(label="New Name").bind_visibility_from(mode, "value", value="full")
+                    original = el.DInput(label="Original").bind_visibility_from(mode, "value", value="replace")
+                    replace = el.DInput(label="Replace").bind_visibility_from(mode, "value", value="replace")
+                with el.WRow():
+                    el.DButton("Rename", on_click=lambda: dialog.submit("rename"))
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">RENAME<")
+        if result == "confirm":
+            result = await dialog
+            if result == "rename":
+                rows = await self._grid.get_selected_rows()
+                for row in rows:
+                    if mode.value == "full":
+                        rename = new_name.value
+                    if mode.value == "replace":
+                        rename = row["name"].replace(original.value, replace.value)
+                    if row["name"] != rename:
+                        self._add_task(
+                            "rename",
+                            zfs.SnapshotRename(
+                                name=f"{row['filesystem']}@{row['name']}", new_name=rename, recursive=recursive.value
+                            ).command,
+                            hosts=zfs_hosts.value,
+                        )
+                    else:
+                        el.notify(f"Skipping rename of {row['filesystem']}@{row['name']}!")
+        self._set_selection()
+
+    async def _hold_snapshot(self):
+        with ui.dialog() as dialog, el.Card():
+            with el.DBody():
+                with el.WColumn():
+                    zfs_hosts = el.DSelect(self._zfs_hosts, value=[self.host], with_input=True, multiple=True, label="Hosts")
+                    tag = el.DInput(label="Tag")
+                    recursive = el.DCheckbox("Recursive")
+                with el.WRow():
+                    el.DButton("Hold", on_click=lambda: dialog.submit("hold"))
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">HOLD<")
+        if result == "confirm":
+            result = await dialog
+            if result == "hold":
+                rows = await self._grid.get_selected_rows()
+                for row in rows:
+                    self._add_task(
+                        "hold",
+                        zfs.SnapshotHold(
+                            name=f"{row['filesystem']}@{row['name']}",
+                            tag=tag.value,
+                            recursive=recursive.value,
+                        ).command,
+                        hosts=zfs_hosts.value,
+                    )
+        self._set_selection()
+
+    async def _release_snapshot(self):
+        all_tags = []
+        with ui.dialog() as dialog, el.Card():
+            with el.DBody():
+                with el.WColumn():
+                    zfs_hosts = el.DSelect(self._zfs_hosts, value=[self.host], with_input=True, multiple=True, label="Hosts")
+                    tags = el.DSelect(all_tags, with_input=True, multiple=True, label="Tags")
+                    recursive = el.DCheckbox("Recursive")
+                with el.WRow():
+                    el.DButton("Release", on_click=lambda: dialog.submit("release"))
+        self._set_selection(mode="multiple")
+        result = await SelectionConfirm(container=self._confirm, label=">RELEASE<")
+        if result == "confirm":
+            self._spinner.visible = True
+            rows = await self._grid.get_selected_rows()
+            for row in rows:
+                holds = await self.zfs.holds_for_snapshot(f"{row['filesystem']}@{row['name']}")
+                all_tags.extend(holds.data)
+            if len(all_tags) > 0:
+                tags.update()
+                self._spinner.visible = False
+                result = await dialog
+                if result == "release":
+                    if len(tags.value) > 0:
+                        for tag in tags.value:
+                            for row in rows:
+                                self._add_task(
+                                    "release",
+                                    zfs.SnapshotRelease(
+                                        name=f"{row['filesystem']}@{row['name']}",
+                                        tag=tag,
+                                        recursive=recursive.value,
+                                    ).command,
+                                    hosts=zfs_hosts.value,
+                                )
+        self._set_selection()
+
+    async def _display_tasks(self):
+        def update_status(timestamp, status, result=None):
+            for row in grid.options["rowData"]:
+                if timestamp == row.timestamp:
+                    row.status = status
+                    if result is not None:
+                        row.result = deepcopy(result)
+                        self.add_history(deepcopy(result))
+                    grid.update()
+                    return row
+
+        async def apply():
+            spinner.visible = True
+            rows = await grid.get_selected_rows()
+            for row in rows:
+                task = Task(**row)
+                if task.status == "pending":
+                    update_status(task.timestamp, "running")
+                    result = await self.zfs.execute(task.command)
+                    if result.stdout == "" and result.stderr == "":
+                        status = "success"
+                        result.failed = False
+                    else:
+                        status = "error"
+                        result.failed = True
+                    update_status(task.timestamp, status, result)
+            spinner.visible = False
+
+        async def dry_run():
+            spinner.visible = True
+            rows = await grid.get_selected_rows()
+            for row in rows:
+                if row["status"] == "pending":
+                    await zfs.Zfs().execute(row["command"])
+            spinner.visible = False
+
+        async def reset():
+            rows = await grid.get_selected_rows()
+            for row in rows:
+                for grow in grid.options["rowData"]:
+                    if row["command"] == grow.command:
+                        grow.status = "pending"
+                grid.update()
+
+        async def display_result(e):
+            if e.args["data"]["result"] is not None:
+                result = Result(**e.args["data"]["result"])
+                await self._display_result(result=result)
+
+        with ui.dialog() as dialog, el.Card():
+            with el.DBody(height="[80vh]", width="[80vw]"):
+                with el.WColumn().classes("col"):
+                    grid = ui.aggrid(
+                        {
+                            "suppressRowClickSelection": True,
+                            "rowSelection": "multiple",
+                            "paginationAutoPageSize": True,
+                            "pagination": True,
+                            "defaultColDef": {"sortable": True},
+                            "columnDefs": [
+                                {
+                                    "headerName": "Host",
+                                    "field": "host",
+                                    "headerCheckboxSelection": True,
+                                    "headerCheckboxSelectionFilteredOnly": True,
+                                    "checkboxSelection": True,
+                                    "filter": "agTextColumnFilter",
+                                    "maxWidth": 100,
+                                },
+                                {
+                                    "headerName": "Action",
+                                    "field": "action",
+                                    "filter": "agTextColumnFilter",
+                                    "maxWidth": 100,
+                                },
+                                {
+                                    "headerName": "Command",
+                                    "field": "command",
+                                    "filter": "agTextColumnFilter",
+                                    "flex": 1,
+                                },
+                                {
+                                    "headerName": "Status",
+                                    "field": "status",
+                                    "filter": "agTextColumnFilter",
+                                    "maxWidth": 100,
+                                    "cellClassRules": {
+                                        "text-blue-300": "x == 'pending'",
+                                        "text-yellow-300": "x == 'running'",
+                                        "text-red-300": "x == 'error'",
+                                        "text-green-300": "x == 'success'",
+                                    },
+                                },
+                            ],
+                            "rowData": self._tasks,
+                        },
+                        theme="balham-dark",
+                    ).on("cellClicked", lambda e: display_result(e))
+                    grid.tailwind().width("full").height("full")
+                    grid.call_api_method("selectAll")
+                with el.WRow() as row:
+                    row.tailwind.height("[40px]")
+                    spinner = el.Spinner()
+                    ui.button("Apply", on_click=apply).props("outline square").classes("text-secondary")
+                    ui.button("Dry Run", on_click=dry_run).props("outline square").classes("text-secondary")
+                    ui.button("Reset", on_click=reset).props("outline square").classes("text-secondary")
+                    ui.button("Remove", on_click=lambda: dialog.submit("finish")).props("outline square").classes("text-secondary")
+                    ui.button("Exit", on_click=lambda: dialog.submit("exit")).props("outline square").classes("text-secondary")
+                    el.Spinner(master=spinner)
+
+        await dialog
+        tasks = list()
+        for task in self._tasks:
+            if task.status != "success":
+                tasks.append(task)
+        self._tasks = tasks
+        await self.display_snapshots()
