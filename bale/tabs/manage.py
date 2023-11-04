@@ -278,7 +278,9 @@ class Manage(Tab):
             rows = await self._grid.get_selected_rows()
             for row in rows:
                 holds = await self.zfs.holds_for_snapshot(f"{row['filesystem']}@{row['name']}")
-                all_tags.extend(holds.data)
+                for tag in holds.data:
+                    if tag not in all_tags:
+                        all_tags.append(tag)
             if len(all_tags) > 0:
                 tags.update()
                 self._spinner.visible = False
