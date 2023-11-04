@@ -39,7 +39,7 @@ class Ssh:
         self.use_key: bool = False
         if password is None:
             self.use_key = True
-        self._key_path: str = f"{self._path}/id_rsa"
+        self.key_path: str = f"{self._path}/id_rsa"
         self._base_cmd: str = ""
         self._full_cmd: str = ""
         self._cli = Cli(seperator=seperator)
@@ -77,7 +77,7 @@ class Ssh:
 
     def set_config(self) -> None:
         self._config[self.host] = {
-            "IdentityFile": self._key_path,
+            "IdentityFile": self.key_path,
             "PasswordAuthentication": "no",
             "StrictHostKeychecking": "no",
             "IdentitiesOnly": "yes",
@@ -101,7 +101,7 @@ class Ssh:
         await get_public_key(self._raw_path)
         cmd = (
             f"sshpass -p {self.password} "
-            f"ssh-copy-id -o IdentitiesOnly=yes -i {self._key_path} "
+            f"ssh-copy-id -o IdentitiesOnly=yes -i {self.key_path} "
             f"-o StrictHostKeychecking=no {self.username}@{self.hostname}"
         )
         return await self._cli.execute(cmd)
