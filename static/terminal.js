@@ -1,10 +1,9 @@
 export default {
   template: "<div></div>",
   async mounted() {
-    await this.load_resource("https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css");
+    await this.load_resource("static/xterm.css");
     this.terminal = new Terminal(this.options);
     this.terminal.open(this.$el);
-    // this.$emit("init", {});
     const connectInterval = setInterval(async () => {
       if (window.socket.id === undefined) return;
       this.$emit("init", { socket_id: window.socket.id });
