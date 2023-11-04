@@ -7,7 +7,7 @@ from apscheduler.triggers.combining import OrTrigger
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from . import Tab
-from nicegui import ui, Tailwind
+from nicegui import ui, Tailwind, events
 from snapper import elements as el
 from snapper.result import Result
 from snapper.interfaces import cli
@@ -66,7 +66,7 @@ class Automation(Tab):
         self.target_host: el.DSelect
         self.target_paths: List[str] = [""]
         self.target_path: el.DSelect
-        self.filesystems: el.DSelect
+        self.fs: Dict[str, Union[str, List[str], Dict[str, str]]]
         self.current_option: el.FSelect
         self.options_scroll: ui.scroll_area
         self.option_controls: Dict[str, Dict[str, Any]] = {}
@@ -105,7 +105,15 @@ class Automation(Tab):
                     "rowSelection": "single",
                     "paginationAutoPageSize": True,
                     "pagination": True,
-                    "defaultColDef": {"flex": 1, "resizable": True, "sortable": True, "autoHeight": True, "wrapText": True},
+                    "defaultColDef": {
+                        "flex": 1,
+                        "resizable": True,
+                        "sortable": True,
+                        "autoHeight": True,
+                        "wrapText": True,
+                        "suppressMovable": True,
+                        "sortingOrder": ["asc", "desc"],
+                    },
                     "columnDefs": [
                         {
                             "headerName": "Name",
@@ -232,19 +240,19 @@ class Automation(Tab):
         if len(rows) > 0:
             await self._create_automation(rows[0]["name"])
 
-    async def _add_prop_to_fs(self, prop: str, module: str = "autobackup", filesystems: Union[List[str], None] = None) -> None:
+    async def _add_prop_to_fs(
+        self,
+        prop: str,
+        value: str,
+        module: str = "autobackup",
+        filesystems: Union[List[str], None] = None,
+    ) -> None:
         if filesystems is not None:
             full_prop = f"{module}:{prop}"
             filesystems_with_prop_result = await self.zfs.filesystems_with_prop(full_prop)
             filesystems_with_prop = list(filesystems_with_prop_result.data)
             for fs in filesystems:
-                if fs in filesystems_with_prop:
-                    filesystems_with_prop.remove(fs)
-                else:
-                    result = await self.zfs.add_filesystem_prop(filesystem=fs, prop=full_prop, value="parent")
-                    self.add_history(result=result)
-            for fs in filesystems_with_prop:
-                result = await self.zfs.remove_filesystem_prop(filesystem=fs, prop=full_prop)
+                result = await self.zfs.add_filesystem_prop(filesystem=fs, prop=full_prop, value=value)
                 self.add_history(result=result)
 
     async def _remove_prop_from_all_fs(self, prop: str, module: str = "autobackup") -> None:
@@ -318,8 +326,19 @@ class Automation(Tab):
         def option_changed(e):
             self.current_help.text = self.options[e.value]["description"]
 
-        async def zab_controls():
-            async def target_host_selected():
+        async def zab_controls() -> None:
+            filesystems = await self.zfs.filesystems
+            if isinstance(self.job_data.get("filesystems", {}), dict):
+                self.fs = self.job_data.get(
+                    "filesystems", {"all": {}, "values": {}, "parent": [], "children": [], "parentchildren": [], "exclude": []}
+                )
+            else:
+                self.fs = {"all": {}, "values": {}, "parent": [], "children": [], "parentchildren": [], "exclude": []}
+            if not self.fs["all"]:
+                for fs in filesystems.data:
+                    self.fs["all"][fs] = ""
+
+            async def target_host_selected() -> None:
                 if self.target_host.value != "":
                     if "ssh-target" in self.option_controls:
                         self.option_controls["ssh-target"]["control"].value = self.target_host.value
@@ -339,16 +358,60 @@ class Automation(Tab):
                     self.target_path.update()
                     self.target_path.value = ""
 
-            async def target_path_selected():
+            async def target_path_selected() -> None:
                 self.build_command()
 
-            def build_command():
+            def build_command() -> None:
                 base = ""
                 for key, value in self.picked_options.items():
                     base = base + f" --{key}{f' {value}' if value != '' else ''}"
                 target_path = f"{f' {self.target_path.value}' if self.target_path.value != '' else ''}"
                 base = base + f" {self.auto_name.value.lower()}" + target_path
                 self.command.value = base
+
+            def all_fs_to_lists():
+                self.fs["parentchildren"].clear()
+                self.fs["parent"].clear()
+                self.fs["children"].clear()
+                self.fs["exclude"].clear()
+                for fs, v in self.fs["all"].items():
+                    if v == "":
+                        self.fs["parentchildren"].append(fs)
+                        self.fs["parent"].append(fs)
+                        self.fs["children"].append(fs)
+                        self.fs["exclude"].append(fs)
+                    elif v == "true":
+                        self.fs["parentchildren"].append(fs)
+                    elif v == "parent":
+                        self.fs["parent"].append(fs)
+                    elif v == "child":
+                        self.fs["children"].append(fs)
+                    elif v == "false":
+                        self.fs["exclude"].append(fs)
+
+            def cull_fs_list(e: events.GenericEventArguments, value: str = "false") -> None:
+                if e.sender != self.parentchildren:
+                    self.parentchildren.disable()
+                if e.sender != self.parent:
+                    self.parent.disable()
+                if e.sender != self.children:
+                    self.children.disable()
+                if e.sender != self.exclude:
+                    self.exclude.disable()
+                for fs, v in self.fs["all"].items():
+                    if v == value:
+                        self.fs["all"][fs] = ""
+                for fs in e.sender.value:
+                    self.fs["all"][fs] = value
+                all_fs_to_lists()
+                self.parentchildren.enable()
+                self.parent.enable()
+                self.children.enable()
+                self.exclude.enable()
+                self.parentchildren.update()
+                self.parent.update()
+                self.children.update()
+                self.exclude.update()
 
             if name == "":
                 self.default_options = {
@@ -364,12 +427,46 @@ class Automation(Tab):
             filesystems = await self.zfs.filesystems
             hosts = [""]
             hosts.extend(self._zfs_hosts)
-            self.target_host = el.DSelect(hosts, label="Target Host", on_change=target_host_selected)
-            self.target_paths = [""]
-            self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", on_change=target_path_selected)
-            self.filesystems = el.DSelect(list(filesystems.data), label="Source Filesystems", with_input=True, multiple=True)
-            self.save.bind_enabled_from(self.filesystems, "value", backward=lambda x: len(x) > 0)
-            options_controls()
+            with ui.row().classes("col") as row:
+                row.tailwind.width("[860px]").justify_content("center")
+                with ui.column() as col:
+                    col.tailwind.height("full").width("[420px]")
+                    self.target_host = el.DSelect(hosts, label="Target Host", on_change=target_host_selected)
+                    self.target_paths = [""]
+                    self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", on_change=target_path_selected)
+                    all_fs_to_lists()
+                    with ui.scroll_area().classes("col"):
+                        self.parentchildren = el.DSelect(
+                            self.fs["parentchildren"],
+                            label="Source Parent And Children",
+                            with_input=True,
+                            multiple=True,
+                            on_change=lambda e: cull_fs_list(e, "true"),
+                        )
+                        self.parent = el.DSelect(
+                            self.fs["parent"],
+                            label="Source Parent Only",
+                            with_input=True,
+                            multiple=True,
+                            on_change=lambda e: cull_fs_list(e, "parent"),
+                        )
+                        self.children = el.DSelect(
+                            self.fs["children"],
+                            label="Source Children Only",
+                            with_input=True,
+                            multiple=True,
+                            on_change=lambda e: cull_fs_list(e, "child"),
+                        )
+                        self.exclude = el.DSelect(
+                            self.fs["exclude"],
+                            label="Exclude",
+                            with_input=True,
+                            multiple=True,
+                            on_change=lambda e: cull_fs_list(e, "false"),
+                        )
+                with ui.column() as col:
+                    col.tailwind.height("full").width("[420px]")
+                    options_controls()
             if name != "":
                 self.target_host.value = self.job_data.get("target_host", "")
                 target_path = self.job_data.get("target_path", "")
@@ -378,7 +475,10 @@ class Automation(Tab):
                     await asyncio.sleep(0.1)
                     tries = tries + 1
                 self.target_path.value = target_path
-                self.filesystems.value = self.job_data.get("filesystems", "")
+                self.parentchildren.value = self.fs["values"].get("parentchildren", None)
+                self.parent.value = self.fs["values"].get("parent", None)
+                self.children.value = self.fs["values"].get("children", None)
+                self.exclude.value = self.fs["values"].get("exclude", None)
 
         def options_controls():
             with ui.row() as row:
@@ -551,27 +651,30 @@ class Automation(Tab):
                 self.schedule_em.enable = False
 
         with ui.dialog() as automation_dialog, el.Card():
-            with el.DBody(height="[90vh]", width="[480px]"):
+            with el.DBody(height="[90vh]", width="fit"):
                 with ui.stepper().props("flat").classes("full-size-stepper") as self.stepper:
                     with ui.step("Schedule Setup"):
                         with el.WColumn().classes("col justify-between"):
-                            with el.WColumn().classes("col"):
-                                self.auto_name = el.DInput(label="Name", value=" ", validation=validate_name)
-                                self.schedule_em = el.ErrorAggregator(self.auto_name)
-                                if name != "":
-                                    self.app = el.DInput(label="Application", value=self.job_data["app"]).props("readonly")
-                                else:
-                                    self.app = el.DSelect(
-                                        ["zfs_autobackup", "local", "remote"],
-                                        value="zfs_autobackup",
-                                        label="Application",
+                            with ui.row().classes("col") as row:
+                                row.tailwind.width("[860px]").justify_content("center")
+                                with ui.column() as col:
+                                    col.tailwind.height("full").width("[420px]")
+                                    self.auto_name = el.DInput(label="Name", value=" ", validation=validate_name)
+                                    self.schedule_em = el.ErrorAggregator(self.auto_name)
+                                    if name != "":
+                                        self.app = el.DInput(label="Application", value=self.job_data["app"]).props("readonly")
+                                    else:
+                                        self.app = el.DSelect(
+                                            ["zfs_autobackup", "local", "remote"],
+                                            value="zfs_autobackup",
+                                            label="Application",
+                                        )
+                                    self.schedule_mode = el.DSelect(
+                                        ["Or", "And"], value="Or", label="Schedule Mode", on_change=schedule_mode_change
                                     )
-                                self.schedule_mode = el.DSelect(
-                                    ["Or", "And"], value="Or", label="Schedule Mode", on_change=schedule_mode_change
-                                )
-                                triggers_col = el.WColumn().classes("col")
-                                with triggers_col:
-                                    trigger_controls()
+                                    triggers_col = el.WColumn().classes("col")
+                                    with triggers_col:
+                                        trigger_controls()
                             with el.WRow():
                                 self.ss_spinner = el.Spinner()
                                 with ui.stepper_navigation() as nav:
@@ -601,7 +704,16 @@ class Automation(Tab):
             else:
                 hosts = [self.host]
             if self.app.value == "zfs_autobackup":
-                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), filesystems=self.filesystems.value)
+                await self._remove_prop_from_all_fs(prop=self.auto_name.value.lower())
+                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="true", filesystems=self.parentchildren.value)
+                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="parent", filesystems=self.parent.value)
+                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="child", filesystems=self.children.value)
+                await self._add_prop_to_fs(prop=self.auto_name.value.lower(), value="false", filesystems=self.exclude.value)
+                self.fs["values"] = {}
+                self.fs["values"]["parentchildren"] = self.parentchildren.value
+                self.fs["values"]["parent"] = self.parent.value
+                self.fs["values"]["children"] = self.children.value
+                self.fs["values"]["exclude"] = self.exclude.value
                 auto = scheduler.Zfs_Autobackup(
                     id=self.auto_name.value.lower(),
                     hosts=hosts,
@@ -612,7 +724,7 @@ class Automation(Tab):
                     target_host=self.target_host.value,
                     target_path=self.target_path.value,
                     target_paths=self.target_path.options,
-                    filesystems=self.filesystems.value,
+                    filesystems=self.fs,
                 )
                 if self.auto_name.value.lower() not in job_handlers:
                     job_handlers[self.auto_name.value.lower()] = cli.Cli()

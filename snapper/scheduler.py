@@ -30,7 +30,7 @@ class Zfs_Autobackup(Automation):
     target_host: str
     target_path: str
     target_paths: List[str]
-    filesystems: List[str]
+    filesystems: Dict[str, Union[str, Dict[str, str]]]
 
 
 class _Scheduler:
