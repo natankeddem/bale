@@ -356,7 +356,7 @@ class Automation(Tab):
                 base = ""
                 for key, value in self.picked_options.items():
                     base = base + f" --{key}{f' {value}' if value != '' else ''}"
-                target_path = f"{f' {self.target_path.value}' if self.target_path.value == '' else ''}"
+                target_path = f"{f' {self.target_path.value}' if self.target_path.value != '' else ''}"
                 base = base + f" {self.auto_name.value.lower()}" + target_path
                 self.command.value = base
 
