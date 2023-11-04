@@ -37,7 +37,7 @@ async def automation_job(**kwargs) -> None:
                 tab.host = d.hosts[0]
                 tab.add_history(result=result)
             else:
-                print("JOB SKIPPED!")
+                logger.warning("Job Skipped!")
         elif jd["app"] == "zfs_autobackup":
             d = scheduler.Zfs_Autobackup(**jd)
             if d.id not in job_handlers:
@@ -47,7 +47,7 @@ async def automation_job(**kwargs) -> None:
                 tab.host = d.hosts[0]
                 tab.add_history(result=result)
             else:
-                print("JOB SKIPPED!")
+                logger.warning("Job Skipped!")
 
 
 class Automation(Tab):

@@ -79,7 +79,7 @@ class Cli:
                 with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(process.wait(), 0.1)
             except Exception as e:
-                print(e)
+                logger.exception(e)
 
     def terminate(self) -> None:
         self._terminate.set()
