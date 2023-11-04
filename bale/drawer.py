@@ -1,7 +1,7 @@
 from nicegui import ui
-from snapper import elements as el
-from snapper.tabs import Tab
-from snapper.interfaces import ssh
+from bale import elements as el
+from bale.tabs import Tab
+from bale.interfaces import ssh
 import logging
 
 logger = logging.getLogger(__name__)

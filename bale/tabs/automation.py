@@ -8,13 +8,13 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from . import Tab
 from nicegui import ui, Tailwind, events
-from snapper import elements as el
-from snapper.result import Result
-from snapper.interfaces import cli
-from snapper.interfaces import ssh
-from snapper.interfaces import zfs
-from snapper.apps import zab
-from snapper import scheduler
+from bale import elements as el
+from bale.result import Result
+from bale.interfaces import cli
+from bale.interfaces import ssh
+from bale.interfaces import zfs
+from bale.apps import zab
+from bale import scheduler
 from cron_validator import CronValidator
 from cron_descriptor import get_description
 import logging

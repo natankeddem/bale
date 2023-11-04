@@ -2,8 +2,8 @@ from typing import Dict, Union
 import os
 import asyncio
 from pathlib import Path
-from snapper.result import Result
-from snapper.interfaces.cli import Cli
+from bale.result import Result
+from bale.interfaces.cli import Cli
 
 
 def get_hosts(path):

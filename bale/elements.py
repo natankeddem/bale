@@ -5,7 +5,7 @@ from nicegui.tailwind_types.height import Height
 from nicegui.tailwind_types.width import Width
 from nicegui.elements.mixins.validation_element import ValidationElement
 from nicegui.events import GenericEventArguments, handle_event
-from snapper.interfaces import cli
+from bale.interfaces import cli
 import logging
 
 logger = logging.getLogger(__name__)

@@ -4,10 +4,10 @@ import asyncio
 from datetime import datetime
 import time
 from nicegui import ui
-from snapper.interfaces.zfs import Ssh
-from snapper import elements as el
-from snapper.result import Result
-from snapper.interfaces import cli
+from bale.interfaces.zfs import Ssh
+from bale import elements as el
+from bale.result import Result
+from bale.interfaces import cli
 
 
 @dataclass(kw_only=True)

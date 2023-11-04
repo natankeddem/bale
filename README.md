@@ -1,19 +1,21 @@
-# snapper: ZFS Snapshot Browser Based GUI
+# bale: ZFS Snapshot Browser Based GUI
 
 ## Demo
-https://github.com/natankeddem/snapper/assets/44515217/dfd1257a-7465-4a92-94f2-29eb6aaaa85e
+
+https://github.com/natankeddem/bale/assets/44515217/dfd1257a-7465-4a92-94f2-29eb6aaaa85e
 
 ## ⚠️ **_WARNING_**
+
 **This utility is currently in early development and may undergo breaking changes in future updates. Your configuration may be lost, and snapshot functionality might be affected. Use with caution; data loss may occur.**
 
 ## Features
 
-- **Remote Management**: Snapper handles all interactions over SSH, eliminating the need for local installation. You can manage your ZFS snapshots from anywhere.
-- **Multi-Host Support**: Configure Snapper to manage multiple hosts within the same installation, making it a versatile choice for system administrators.
+- **Remote Management**: bale handles all interactions over SSH, eliminating the need for local installation. You can manage your ZFS snapshots from anywhere.
+- **Multi-Host Support**: Configure bale to manage multiple hosts within the same installation, making it a versatile choice for system administrators.
 - **User-Friendly GUI**: Easily manage your ZFS snapshots with an intuitive web-based interface that simplifies the process.
-- **Automation**: Snapper can automate generic remote and local applications as well as work seamlessly with zfs_autobackup, streamlining your backup and snapshot tasks.
+- **Automation**: bale can automate generic remote and local applications as well as work seamlessly with zfs_autobackup, streamlining your backup and snapshot tasks.
 - **Download**: Easily download files directly from your ZFS snapshots through the web interface.
- 
+
 ## Installation
 
 ### Using Docker
@@ -44,6 +46,6 @@ https://github.com/natankeddem/snapper/assets/44515217/dfd1257a-7465-4a92-94f2-2
 
 ### Access GUI
 
-Access snapper by navigating to `http://host:8080`.
+Access bale by navigating to `http://host:8080`.
 
 ---

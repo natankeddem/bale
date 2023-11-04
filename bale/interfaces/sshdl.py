@@ -6,8 +6,8 @@ import uuid
 from nicegui import app, events, ui
 from fastapi.responses import StreamingResponse
 import asyncssh
-from snapper import elements as el
-from snapper.interfaces.zfs import Ssh
+from bale import elements as el
+from bale.interfaces.zfs import Ssh
 
 
 def format_bytes(size: Union[int, float]) -> str:

@@ -2,10 +2,10 @@ import asyncio
 from copy import deepcopy
 from nicegui import ui
 from . import Tab, Task
-from snapper.result import Result
-from snapper import elements as el
-from snapper.interfaces import zfs
-from snapper.interfaces import sshdl
+from bale.result import Result
+from bale import elements as el
+from bale.interfaces import zfs
+from bale.interfaces import sshdl
 import logging
 
 logger = logging.getLogger(__name__)

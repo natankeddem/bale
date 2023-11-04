@@ -1,9 +1,9 @@
 from datetime import datetime
 from . import Tab
 from nicegui import ui
-from snapper import elements as el
-from snapper.result import Result
-from snapper.interfaces import zfs
+from bale import elements as el
+from bale.result import Result
+from bale.interfaces import zfs
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,0 +1,11 @@
+[Unit]
+Description=bale Application Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/bale
+ExecStart=/root/bale/venv/bin/python /root/bale/main.py
+
+[Install]
+WantedBy=multi-user.target

@@ -5,7 +5,7 @@ import contextlib
 import shlex
 from datetime import datetime
 from nicegui import app, ui
-from snapper.result import Result
+from bale.result import Result
 import logging
 
 logger = logging.getLogger(__name__)

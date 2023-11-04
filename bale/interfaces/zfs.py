@@ -2,9 +2,9 @@ from typing import Any, Dict, Union
 import re
 from datetime import datetime
 from dataclasses import dataclass
-from snapper.result import Result
-from snapper.interfaces import ssh
-from snapper import elements as el
+from bale.result import Result
+from bale.interfaces import ssh
+from bale import elements as el
 import logging
 
 logger = logging.getLogger(__name__)

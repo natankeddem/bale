@@ -1,8 +1,8 @@
 from nicegui import ui
-from snapper import elements as el
-from snapper.drawer import Drawer
-from snapper.content import Content
-from snapper.interfaces import cli
+from bale import elements as el
+from bale.drawer import Drawer
+from bale.content import Content
+from bale.interfaces import cli
 import logging
 
 logger = logging.getLogger(__name__)

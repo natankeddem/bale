@@ -2,11 +2,11 @@ from nicegui import app, ui
 import re
 from datetime import datetime
 import asyncio
-from snapper import elements as el
-import snapper.logo as logo
-from snapper.tabs.manage import Manage
-from snapper.tabs.history import History
-from snapper.tabs.automation import Automation
+from bale import elements as el
+import bale.logo as logo
+from bale.tabs.manage import Manage
+from bale.tabs.history import History
+from bale.tabs.automation import Automation
 import logging
 
 logger = logging.getLogger(__name__)
