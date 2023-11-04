@@ -80,7 +80,7 @@ class Drawer(object):
                 el.notify(result.stderr.strip(), multi_line=True, type="negative")
 
         with ui.dialog() as host_dialog, el.Card():
-            with el.DBody(height="[80vh]", width="[360px]"):
+            with el.DBody(height="[560px]", width="[360px]"):
                 with el.WColumn():
                     host_input = el.DInput(label="Host", value=" ")
                     hostname_input = el.DInput(label="Hostname", value=" ")
@@ -94,7 +94,7 @@ class Drawer(object):
                     with el.Card() as c:
                         c.tailwind.width("full")
                         with ui.scroll_area() as s:
-                            s.tailwind.height("[200px]")
+                            s.tailwind.height("[160px]")
                             public_key = await ssh.get_public_key("data")
                             ui.label(public_key).classes("text-secondary break-all")
                 el.DButton("SAVE", on_click=lambda: host_dialog.submit("save")).bind_enabled_from(save_em, "no_errors")
