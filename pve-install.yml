@@ -88,10 +88,10 @@
         requirements: "/root/{{ app_name }}/requirements.txt"
         state: present
     - name: "Install {{ app_name }} serivce."
-      become: true
-      ansible.builtin.template:
-        src: "resources/{{ app_name }}.service"
+      ansible.builtin.copy:
+        src: "/root/{{ app_name }}/resources/{{ app_name }}.service"
         dest: "/etc/systemd/system/{{ app_name }}.service"
+        remote_src: yes
         owner: root
         mode: "0755"
         force: true
