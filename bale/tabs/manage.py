@@ -164,9 +164,7 @@ class Manage(Tab):
                     if row["name"] != rename:
                         self._add_task(
                             "rename",
-                            zfs.SnapshotRename(
-                                name=f"{row['filesystem']}@{row['name']}", new_name=rename, recursive=recursive.value
-                            ).command,
+                            zfs.SnapshotRename(name=f"{row['filesystem']}@{row['name']}", new_name=rename, recursive=recursive.value).command,
                             hosts=zfs_hosts.value,
                         )
                     else:
