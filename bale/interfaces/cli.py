@@ -118,8 +118,7 @@ class Cli:
         try:
             process = await asyncio.create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
             if process is not None and process.stdout is not None and process.stderr is not None:
-                self.stdout.clear()
-                self.stderr.clear()
+                self.clear_buffers()
                 self._terminate.clear()
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 self.prefix_line = f"<{now}> {command}\n"
@@ -135,6 +134,11 @@ class Cli:
         finally:
             self._busy = False
         return Result(command=command, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=False)
+
+    def clear_buffers(self):
+        self.prefix_line = ""
+        self.stdout.clear()
+        self.stderr.clear()
 
     def register_stdout_terminal(self, terminal: Terminal) -> None:
         if terminal not in self._stdout_terminals:
