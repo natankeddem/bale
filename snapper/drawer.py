@@ -80,7 +80,7 @@ class Drawer(object):
                 el.notify(result.stderr.strip(), multi_line=True, type="negative")
 
         with ui.dialog() as host_dialog, el.Card():
-            with el.DBody(height="[90vh]"):
+            with el.DBody(height="[80vh]", width="[360px]"):
                 with el.WColumn():
                     host_input = el.DInput(label="Host", value=" ")
                     hostname_input = el.DInput(label="Hostname", value=" ")

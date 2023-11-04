@@ -63,8 +63,9 @@ class Tab:
                                 ui.label(f"Data is cached: {result.cached}").classes("text-secondary")
                                 ui.label(f"Time: {result.time}").classes("text-secondary")
                     with el.Card() as card:
-                        card.tailwind.width("11/12").justify_items("center")
-                        cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True}, on_init=lambda e: print_to_terminal(e))
+                        card.tailwind.width("11/12")
+                        with el.WColumn():
+                            cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True}, on_init=lambda e: print_to_terminal(e))
                 with el.WRow() as row:
                     row.tailwind.height("[40px]")
                     el.DButton("Exit", on_click=lambda: dialog.submit("exit"))
