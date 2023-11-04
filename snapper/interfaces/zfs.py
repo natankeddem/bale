@@ -80,8 +80,9 @@ class Zfs:
     def notify(self, command: str):
         el.notify(command)
 
-    async def execute(self, command: str) -> Result:
-        self.notify(command)
+    async def execute(self, command: str, notify: bool = True) -> Result:
+        if notify:
+            self.notify(command)
         return Result(command=command)
 
     def invalidate_query(self, query: Union[str, None] = None):
@@ -202,8 +203,9 @@ class Ssh(ssh.Ssh, Zfs):
     def notify(self, command: str):
         el.notify(f"<{self.host}> {command}")
 
-    async def execute(self, command: str) -> Result:
-        self.notify(command)
+    async def execute(self, command: str, notify: bool = True) -> Result:
+        if notify:
+            self.notify(command)
         result = await super().execute(command)
         if result.stderr != "":
             el.notify(result.stderr, type="negative")
