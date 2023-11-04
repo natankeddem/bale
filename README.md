@@ -15,7 +15,8 @@ https://github.com/natankeddem/snapper/assets/44515217/ebc4218f-dc32-4c5d-9c33-3
 - **Multi-Host Support**: Configure Snapper to manage multiple hosts within the same installation, making it a versatile choice for system administrators.
 - **User-Friendly GUI**: Easily manage your ZFS snapshots with an intuitive web-based interface that simplifies the process.
 - **Automation**: Snapper can automate generic remote and local applications as well as work seamlessly with zfs_autobackup, streamlining your backup and snapshot tasks.
-
+- **Download**: Easily download files directly from your ZFS snapshots through the web interface.
+ 
 ## Installation
 
 ### Using Docker
