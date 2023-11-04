@@ -63,7 +63,8 @@ class Manage(Tab):
                     el.SmButton(text="Rename", on_click=self._rename_snapshot)
                     el.SmButton(text="Hold", on_click=self._hold_snapshot)
                     el.SmButton(text="Release", on_click=self._release_snapshot)
-                    el.SmButton(text="Download", on_click=self._download)
+                    el.SmButton(text="Browse", on_click=self._browse)
+                    el.SmButton(text="Find", on_click=self._find)
                 with ui.row().classes("items-center"):
                     self._auto = ui.checkbox("Auto")
                     self._auto.props(f"left-label keep-color color=primary")
@@ -140,19 +141,17 @@ class Manage(Tab):
         self._grid.options["rowSelection"] = row_selection
         self._grid.update()
 
-    async def _download(self) -> None:
+    async def _browse(self) -> None:
         self._set_selection(mode="multiple")
-        result = await SelectionConfirm(container=self._confirm, label=">DOWNLOAD<")
+        result = await SelectionConfirm(container=self._confirm, label=">BROWSE<")
         if result == "confirm":
             rows = await self._grid.get_selected_rows()
             filesystems = await self.zfs.filesystems
             mount_path = filesystems.data[rows[0]["filesystem"]]["mountpoint"]
-            await sshdl.SshFileDownload(
-                path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}",
-                hostname=self.zfs.hostname,
-                username=self.zfs.username,
-                key_path=self.zfs.key_path,
-            )
+            await sshdl.SshFileBrowse(zfs=self.zfs, path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}")
+
+    async def _find(self) -> None:
+        await sshdl.SshFileFind(zfs=self.zfs)
 
     async def _create_snapshot(self):
         with ui.dialog() as dialog, el.Card():

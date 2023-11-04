@@ -1,4 +1,4 @@
-from typing import AsyncIterable, Dict, List, Optional, Union, Tuple
+from typing import Any, AsyncIterable, Coroutine, Dict, List, Optional, Union, Tuple
 from pathlib import Path
 import stat
 from datetime import datetime
@@ -7,6 +7,7 @@ from nicegui import app, events, ui
 from fastapi.responses import StreamingResponse
 import asyncssh
 from snapper import elements as el
+from snapper.interfaces.zfs import Ssh
 
 
 def format_bytes(size: Union[int, float]) -> str:
@@ -20,17 +21,20 @@ def format_bytes(size: Union[int, float]) -> str:
     return f"{s}{suffixs[n]}B"
 
 
-class SshFileDownload(ui.dialog):
-    def __init__(self, path: str, hostname: str, username: str, key_path: str) -> None:
+class SshFileBrowse(ui.dialog):
+    def __init__(self, zfs: Ssh, path: str = "/") -> None:
         super().__init__()
+        self._zfs: Ssh = zfs
         self._starting_path: str = path
         self._path: Path
         self.path = path
-        self._hostname: str = hostname
-        self._username: str = username
-        self._key_path: str = key_path
         self._ssh: Optional[asyncssh.SSHClientConnection] = None
         self._sftp: Optional[asyncssh.SFTPClient] = None
+        ui.timer(0, self._display, once=True)
+        self._card: el.Card
+        self._grid: ui.aggrid
+
+    async def _display(self):
         with self, el.Card() as self._card:
             with el.DBody(width="[560px]"):
                 with el.WColumn().classes("col"):
@@ -83,10 +87,10 @@ class SshFileDownload(ui.dialog):
                     row.tailwind.height("[40px]")
                     el.DButton("Download", on_click=self._start_download)
                     ui.button("Exit", on_click=lambda: self.submit("exit"))
-        ui.timer(0.001, self._update_grid, once=True)
+        await self._update_grid()
 
     async def _connect(self) -> Tuple[asyncssh.SSHClientConnection, asyncssh.SFTPClient]:
-        ssh = await asyncssh.connect(self._hostname, username=self._username, client_keys=[self._key_path])
+        ssh = await asyncssh.connect(self._zfs.hostname, username=self._zfs.username, client_keys=[self._zfs.key_path])
         sftp = await ssh.start_sftp_client()
         return ssh, sftp
 
@@ -214,3 +218,61 @@ class SshFileDownload(ui.dialog):
     @property
     def parent(self) -> str:
         return str(Path(self._path).parent)
+
+
+class SshFileFind(SshFileBrowse):
+    async def _display(self):
+        with self, el.Card() as self._card:
+            with el.DBody(height="fit", width="[90vw]"):
+                with el.WColumn().classes("col"):
+                    filesystems = await self._zfs.filesystems
+                    self._filesystem = el.DSelect(
+                        list(filesystems.data.keys()), label="filesystem", with_input=True, on_change=self._update_grid
+                    )
+                    self._pattern = el.DInput("Pattern", on_change=self._update_grid)
+                    self._grid = ui.aggrid(
+                        {
+                            "defaultColDef": {"flex": 1, "sortable": True, "suppressMovable": True, "sortingOrder": ["asc", "desc"]},
+                            "columnDefs": [
+                                {"field": "name", "headerName": "Name", "flex": 1, "sort": "desc", "resizable": True},
+                                {"field": "location", "headerName": "Location", "flex": 1, "resizable": True},
+                                {
+                                    "field": "modified_datetime",
+                                    "headerName": "Modified",
+                                    "maxWidth": 200,
+                                    ":comparator": """(valueA, valueB, nodeA, nodeB, isInverted) => {
+                                            return (nodeA.data.modified_timestamp > nodeB.data.modified_timestamp) ? -1 : 1;
+                                        }""",
+                                },
+                                {
+                                    "field": "size",
+                                    "headerName": "Size",
+                                    "maxWidth": 100,
+                                    ":comparator": """(valueA, valueB, nodeA, nodeB, isInverted) => {
+                                            return (nodeA.data.bytes > nodeB.data.bytes) ? -1 : 1;
+                                        }""",
+                                },
+                            ],
+                            "rowSelection": "single",
+                        },
+                        html_columns=[0],
+                        theme="balham-dark",
+                    )
+                    self._grid.on("cellDoubleClicked", self._handle_double_click)
+                    self._grid.tailwind().height("[320px]").width("full")
+                with el.WRow() as row:
+                    row.tailwind.height("[40px]")
+                    el.DButton("Download", on_click=self._start_download)
+                    ui.button("Exit", on_click=lambda: self.submit("exit"))
+            await self._update_grid()
+
+    async def _update_grid(self) -> None:
+        self._grid.call_api_method("showLoadingOverlay")
+        if self._filesystem is not None:
+            files = await self._zfs.find_files_in_snapshots(filesystem=self._filesystem.value, pattern=self._pattern.value)
+            self._grid.options["rowData"] = files.data
+        self._grid.update()
+        self._grid.call_api_method("hideOverlay")
+
+    async def _handle_double_click(self, e: events.GenericEventArguments) -> None:
+        await self._start_download(e)
