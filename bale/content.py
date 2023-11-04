@@ -44,9 +44,7 @@ class Content:
                     self._host_display = ui.label().classes("text-secondary text-h4")
                     logo.show()
         self._tab_panels = (
-            ui.tab_panels(self._tabs, value="Manage", on_change=lambda e: self._tab_changed(e), animated=False)
-            .classes("w-full h-full")
-            .bind_visibility_from(self._header)
+            ui.tab_panels(self._tabs, value="Manage", on_change=lambda e: self._tab_changed(e), animated=False).classes("w-full h-full").bind_visibility_from(self._header)
         )
 
     async def _tab_changed(self, e):
@@ -57,13 +55,13 @@ class Content:
 
     def _build_tab_panels(self):
         with self._tab_panels:
-            with ui.tab_panel(self._tab["manage"]).style("height: calc(100vh - 61px)"):
+            with ui.tab_panel(self._tab["manage"]).style("height: calc(100vh - 131px)"):
                 self._manage = Manage(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["automation"]).style("height: calc(100vh - 61px)"):
+            with ui.tab_panel(self._tab["automation"]).style("height: calc(100vh - 131px)"):
                 self._automation = Automation(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["history"]).style("height: calc(100vh - 61px)"):
+            with ui.tab_panel(self._tab["history"]).style("height: calc(100vh - 131px)"):
                 self._history = History(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["settings"]).style("height: calc(100vh - 61px)"):
+            with ui.tab_panel(self._tab["settings"]).style("height: calc(100vh - 131px)"):
                 ui.label("settings tab")
 
     async def host_selected(self, name):
