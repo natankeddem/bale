@@ -6,6 +6,7 @@ services:
     ports:
       - 8080:8080
     volumes:
+      - /etc/localtime:/etc/localtime:ro
       - ~/path/to/data:/app/data
       - ~/path/to/logs:/app/logs
     environment:
