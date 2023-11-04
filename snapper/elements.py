@@ -139,7 +139,9 @@ class DSelect(ui.select):
         super().__init__(
             options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable
         )
-        self.tailwind.width("full").max_height("[40px]")
+        self.tailwind.width("full")
+        if multiple is True:
+            self.props("use-chips")
 
 
 class FSelect(ui.select):
