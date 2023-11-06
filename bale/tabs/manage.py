@@ -81,7 +81,7 @@ class Manage(Tab):
         self._spinner.visible = False
 
     async def _browse(self) -> None:
-        self._set_selection(mode="multiple")
+        self._set_selection(mode="single")
         result = await SelectionConfirm(container=self._confirm, label=">BROWSE<")
         if result == "confirm":
             rows = await self._grid.get_selected_rows()
