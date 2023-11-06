@@ -27,9 +27,10 @@ class Manage(Tab):
                     el.SmButton(text="Browse", on_click=self._browse)
                     el.SmButton(text="Find", on_click=self._find)
                 with ui.row().classes("items-center"):
-                    self._auto = ui.checkbox("Auto")
-                    self._auto.props(f"left-label keep-color color=primary")
+                    self._auto = ui.checkbox("Auto", on_change=lambda e: self.common.update({"auto": e.value}))
+                    self._auto.props("left-label keep-color color=primary")
                     self._auto.tailwind.text_color("primary")
+                    self._auto.value = self.common.get("auto", False)
                     el.SmButton(text="Tasks", on_click=self._display_tasks)
                     el.SmButton(text="Refresh", on_click=self.display_snapshots)
             self._grid = ui.aggrid(
@@ -111,11 +112,15 @@ class Manage(Tab):
         result = await dialog
         if result == "create":
             for filesystem in filesystems.value:
-                self._add_task(
+                tasks = self._add_task(
                     "create",
                     zfs.SnapshotCreate(name=f"{filesystem}@{name.value}", recursive=recursive.value).command,
                     hosts=zfs_hosts.value,
                 )
+                if self._auto.value is True:
+                    for task in tasks:
+                        await self._run_task(task=task, spinner=self._spinner)
+                    await self.display_snapshots()
 
     async def _destroy_snapshot(self):
         with ui.dialog() as dialog, el.Card():
@@ -132,11 +137,15 @@ class Manage(Tab):
             if result == "destroy":
                 rows = await self._grid.get_selected_rows()
                 for row in rows:
-                    self._add_task(
+                    tasks = self._add_task(
                         "destroy",
                         zfs.SnapshotDestroy(name=f"{row['filesystem']}@{row['name']}", recursive=recursive.value).command,
                         hosts=zfs_hosts.value,
                     )
+                    if self._auto.value is True:
+                        for task in tasks:
+                            await self._run_task(task=task, spinner=self._spinner)
+                        await self.display_snapshots()
         self._set_selection()
 
     async def _rename_snapshot(self):
@@ -163,11 +172,15 @@ class Manage(Tab):
                     if mode.value == "replace":
                         rename = row["name"].replace(original.value, replace.value)
                     if row["name"] != rename:
-                        self._add_task(
+                        tasks = self._add_task(
                             "rename",
                             zfs.SnapshotRename(name=f"{row['filesystem']}@{row['name']}", new_name=rename, recursive=recursive.value).command,
                             hosts=zfs_hosts.value,
                         )
+                        if self._auto.value is True:
+                            for task in tasks:
+                                await self._run_task(task=task, spinner=self._spinner)
+                            await self.display_snapshots()
                     else:
                         el.notify(f"Skipping rename of {row['filesystem']}@{row['name']}!")
         self._set_selection()
@@ -188,7 +201,7 @@ class Manage(Tab):
             if result == "hold":
                 rows = await self._grid.get_selected_rows()
                 for row in rows:
-                    self._add_task(
+                    tasks = self._add_task(
                         "hold",
                         zfs.SnapshotHold(
                             name=f"{row['filesystem']}@{row['name']}",
@@ -197,6 +210,10 @@ class Manage(Tab):
                         ).command,
                         hosts=zfs_hosts.value,
                     )
+                    if self._auto.value is True:
+                        for task in tasks:
+                            await self._run_task(task=task, spinner=self._spinner)
+                        await self.display_snapshots()
         self._set_selection()
 
     async def _release_snapshot(self):
@@ -227,7 +244,7 @@ class Manage(Tab):
                     if len(tags.value) > 0:
                         for tag in tags.value:
                             for row in rows:
-                                self._add_task(
+                                tasks = self._add_task(
                                     "release",
                                     zfs.SnapshotRelease(
                                         name=f"{row['filesystem']}@{row['name']}",
@@ -236,35 +253,42 @@ class Manage(Tab):
                                     ).command,
                                     hosts=zfs_hosts.value,
                                 )
+                                if self._auto.value is True:
+                                    for task in tasks:
+                                        await self._run_task(task=task, spinner=self._spinner)
+                                    await self.display_snapshots()
         self._set_selection()
 
-    async def _display_tasks(self):
-        def update_status(timestamp, status, result=None):
-            for row in grid.options["rowData"]:
-                if timestamp == row.timestamp:
-                    row.status = status
-                    if result is not None:
-                        row.result = deepcopy(result)
-                        self.add_history(deepcopy(result))
-                    grid.update()
-                    return row
+    def _update_task_status(self, timestamp, status, result=None):
+        for task in self._tasks:
+            if timestamp == task.timestamp:
+                task.status = status
+                if result is not None:
+                    task.result = deepcopy(result)
+                    self.add_history(deepcopy(result))
+                return task
 
+    async def _run_task(self, task: Task, spinner: el.Spinner):
+        spinner.visible = True
+        if task.status == "pending":
+            self._update_task_status(task.timestamp, "running")
+            result = await self.zfs.execute(task.command)
+            if result.stdout == "" and result.stderr == "":
+                status = "success"
+                result.failed = False
+            else:
+                status = "error"
+                result.failed = True
+            self._update_task_status(task.timestamp, status, result)
+        spinner.visible = False
+
+    async def _display_tasks(self):
         async def apply():
-            spinner.visible = True
             rows = await grid.get_selected_rows()
             for row in rows:
                 task = Task(**row)
-                if task.status == "pending":
-                    update_status(task.timestamp, "running")
-                    result = await self.zfs.execute(task.command)
-                    if result.stdout == "" and result.stderr == "":
-                        status = "success"
-                        result.failed = False
-                    else:
-                        status = "error"
-                        result.failed = True
-                    update_status(task.timestamp, status, result)
-            spinner.visible = False
+                await self._run_task(task=task, spinner=spinner)
+                grid.update()
 
         async def dry_run():
             spinner.visible = True

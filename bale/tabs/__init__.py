@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import asyncio
 from datetime import datetime
 import time
-from nicegui import ui
+from nicegui import app, ui
 from bale.interfaces.zfs import Ssh
 from bale import elements as el
 from bale.result import Result
@@ -115,11 +115,14 @@ class Tab:
             self._history.pop(0)
         self._history.append(r)
 
-    def _add_task(self, action: str, command: str, hosts: Union[List[str], None] = None) -> None:
+    def _add_task(self, action: str, command: str, hosts: Union[List[str], None] = None) -> List[Task]:
         if hosts is None:
             hosts = [self.host]
+        tasks = []
         for host in hosts:
-            self._tasks.append(Task(action=action, command=command, host=host, status="pending"))
+            tasks.append(Task(action=action, command=command, host=host, status="pending"))
+        self._tasks.extend(tasks)
+        return tasks
 
     def _remove_task(self, timestamp: str):
         for task in self._tasks:
@@ -150,3 +153,9 @@ class Tab:
     @property
     def _zfs_hosts(self) -> List[str]:
         return list(self._zfs.keys())
+
+    @property
+    def common(self):
+        if "common" not in app.storage.general:
+            app.storage.general["common"] = {}
+        return app.storage.general["common"]
