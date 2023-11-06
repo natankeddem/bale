@@ -41,7 +41,6 @@ class Ssh(Cli):
         self.key_path: str = f"{self._path}/id_rsa"
         self._base_cmd: str = ""
         self._full_cmd: str = ""
-        # self._cli = Cli(seperator=seperator)
         self._config_path: str = f"{self._path}/config"
         self._config: Dict[str, Dict[str, str]] = {}
         self.read_config()
