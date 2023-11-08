@@ -4,7 +4,7 @@ from asyncio.subprocess import Process, PIPE
 import contextlib
 import shlex
 from datetime import datetime
-from nicegui import app, ui
+from nicegui import ui
 from bale.result import Result
 import logging
 
@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 def load_terminal_css():
-    app.add_static_files("/static", "static")
     ui.add_head_html('<link href="static/xterm.css" rel="stylesheet">')
 
 

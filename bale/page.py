@@ -1,4 +1,4 @@
-from nicegui import ui
+from nicegui import app, ui
 from bale import elements as el
 from bale.drawer import Drawer
 from bale.content import Content
@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 def build():
     @ui.page("/")
     def page():
+        app.add_static_files("/static", "static")
         ui.add_head_html(
             """
 <style>
