@@ -51,6 +51,11 @@ async def automation_job(**kwargs) -> None:
             if job_handlers[d.id].is_busy is False:
                 result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
                 result.name = d.host
+                result.status = "success" if result.return_code == 0 else "error"
+                if d.pipe_success is True and result.status == "success":
+                    tab.pipe_result(result=result)
+                if d.pipe_error is True and result.status != "success":
+                    tab.pipe_result(result=result)
                 tab.add_history(result=result)
             else:
                 logger.warning("Job Skipped!")
@@ -60,6 +65,10 @@ async def automation_job(**kwargs) -> None:
             if job_handlers[d.id].is_busy is False:
                 result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
                 result.name = d.host
+                if d.pipe_success is True and result.status == "success":
+                    tab.pipe_result(result=result)
+                if d.pipe_error is True and result.status != "success":
+                    tab.pipe_result(result=result)
                 tab.add_history(result=result)
             else:
                 logger.warning("Job Skipped!")
@@ -69,6 +78,10 @@ async def automation_job(**kwargs) -> None:
             if job_handlers[d.id].is_busy is False:
                 result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
                 result.name = d.host
+                if d.pipe_success is True and result.status == "success":
+                    tab.pipe_result(result=result)
+                if d.pipe_error is True and result.status != "success":
+                    tab.pipe_result(result=result)
                 tab.add_history(result=result)
             else:
                 logger.warning("Job Skipped!")
@@ -699,7 +712,7 @@ class Automation(Tab):
 
         with ui.dialog() as automation_dialog, el.Card():
             with el.DBody(height="[90vh]", width="fit"):
-                with ui.stepper().props("flat").classes("full-size-stepper") as self.stepper:
+                with ui.stepper() as self.stepper:
                     with ui.step("Schedule Setup"):
                         with el.WColumn().classes("col justify-between"):
                             with ui.row().classes("col") as row:
@@ -707,6 +720,9 @@ class Automation(Tab):
                                 with ui.column() as col:
                                     col.tailwind.height("full").width("[420px]")
                                     self.auto_name = el.DInput(label="Name", value=" ", validation=validate_name)
+                                    with el.WRow():
+                                        self.pipe_success = el.DCheckbox("Pipe Success", value=self.job_data.get("pipe_success", False))
+                                        self.pipe_error = el.DCheckbox("Pipe Error", value=self.job_data.get("pipe_error", False))
                                     self.schedule_em = el.ErrorAggregator(self.auto_name)
                                     if name != "":
                                         self.app = el.DInput(label="Application", value=self.job_data["app"]).props("readonly")
@@ -778,6 +794,8 @@ class Automation(Tab):
                         target_path=self.target_path.value,
                         target_paths=self.target_path.options,
                         filesystems=self.fs,
+                        pipe_success=self.pipe_success.value,
+                        pipe_error=self.pipe_error.value,
                     )
                     self.scheduler.scheduler.add_job(
                         automation_job,
@@ -803,6 +821,8 @@ class Automation(Tab):
                         command=self.command.value,
                         schedule_mode=self.schedule_mode.value,
                         triggers=self.picked_triggers,
+                        pipe_success=self.pipe_success.value,
+                        pipe_error=self.pipe_error.value,
                     )
                     self.scheduler.scheduler.add_job(
                         automation_job,
@@ -823,6 +843,8 @@ class Automation(Tab):
                     command=self.command.value,
                     schedule_mode=self.schedule_mode.value,
                     triggers=self.picked_triggers,
+                    pipe_success=self.pipe_success.value,
+                    pipe_error=self.pipe_error.value,
                 )
                 self.scheduler.scheduler.add_job(
                     automation_job,
