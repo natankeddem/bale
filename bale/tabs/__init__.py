@@ -1,8 +1,11 @@
 from typing import Any, Dict, List, Union
 from dataclasses import dataclass, field
+import string
 import asyncio
 from datetime import datetime
 import time
+import json
+import httpx
 from nicegui import app, ui
 from bale.interfaces.zfs import Ssh
 from bale import elements as el
@@ -19,6 +22,10 @@ class Task:
     result: Union[Result, None] = None
     history: float = field(default_factory=time.time)
     timestamp: float = field(default_factory=time.time)
+
+
+class PipeTemplate(string.Template):
+    delimiter = ""
 
 
 class SelectionConfirm:
@@ -146,6 +153,48 @@ class Tab:
         self._grid.options["rowSelection"] = row_selection
         self._grid.update()
 
+    def get_pipe(self, pipe):
+        if pipe not in self.pipes:
+            self.pipes[pipe] = {}
+        return self.pipes[pipe]
+
+    def get_pipe_status(self, pipe, status):
+        if status not in self.get_pipe(pipe):
+            self.get_pipe(pipe)[status] = {}
+        return self.get_pipe(pipe)[status]
+
+    def process_pipe_data(self, result: Result, data: Any):
+        template = PipeTemplate(json.dumps(data))
+        json_string = template.safe_substitute(
+            name=result.name,
+            command=result.command,
+            return_code=result.return_code,
+            stdout_lines=result.stdout_lines,
+            stderr_lines=result.stderr_lines,
+            terminated=result.terminated,
+            data=result.data,
+            trace=result.trace,
+            cached=result.cached,
+            status=result.status,
+            timestamp=result.timestamp,
+            failed=result.failed,
+            date=result.date,
+            time=result.time,
+            stdout=result.stdout,
+            stderr=result.stderr,
+        )
+        json_string = json_string.replace("\n", r"\n").replace("\b", r"\b").replace("\f", r"\f").replace("\r", r"\r").replace("\t", r"\t")
+        return json.loads(json_string)
+
+    def pipe_result(self, result: Result):
+        http = self.get_pipe("http")
+        if http.get("enable", False) is True:
+            status = "success" if result.status == "success" else "error"
+            url = http[status]["url"]
+            data = self.process_pipe_data(result=result, data=http[status]["data"])
+            headers = http[status]["headers"]
+            httpx.post(url=url, json=data, headers=headers)
+
     @property
     def zfs(self) -> Ssh:
         return self._zfs[self.host]
@@ -155,7 +204,13 @@ class Tab:
         return list(self._zfs.keys())
 
     @property
-    def common(self):
+    def common(self) -> Dict[str, Any]:
         if "common" not in app.storage.general:
             app.storage.general["common"] = {}
         return app.storage.general["common"]
+
+    @property
+    def pipes(self) -> Dict[str, Any]:
+        if "pipes" not in self.common:
+            self.common["pipes"] = {}
+        return self.common["pipes"]
