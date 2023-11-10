@@ -1,35 +1,31 @@
 from nicegui import app, ui
-from bale import elements as el
-from bale.drawer import Drawer
-from bale.content import Content
-from bale.interfaces import cli
 import logging
 
 logger = logging.getLogger(__name__)
 
 
+def load_defaults() -> None:
+    ui.card.default_style("max-width: none")
+    ui.card.default_props("flat bordered")
+    ui.input.default_props("outlined dense hide-bottom-space")
+    ui.button.default_props("outline dense")
+    ui.select.default_props("outlined dense dense-options")
+    ui.checkbox.default_props("dense")
+    ui.stepper.default_props("flat")
+    ui.stepper.default_classes("full-size-stepper")
+
+
 def build():
     @ui.page("/")
-    def page():
+    def page() -> None:
         app.add_static_files("/static", "static")
-        ui.add_head_html(
-            """
-<style>
-    .full-size-stepper,
-    .full-size-stepper .q-stepper__content,
-    .full-size-stepper .q-stepper__step-content,
-    .full-size-stepper .q-stepper__step-inner {
-        height: 100%;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-    .multi-line-notification {
-        white-space: pre-line;
-    }
-</style>
-"""
-        )
+        load_defaults()
+        from bale import elements as el
+        from bale.drawer import Drawer
+        from bale.content import Content
+        from bale.interfaces import cli
+
+        el.load_element_css()
         cli.load_terminal_css()
         ui.colors(
             primary=el.orange,

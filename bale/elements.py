@@ -12,12 +12,28 @@ logger = logging.getLogger(__name__)
 
 orange = "#f59e0b"
 dark = "#171717"
-ui.card.default_style("max-width: none")
-ui.card.default_props("flat bordered")
-ui.input.default_props("outlined dense hide-bottom-space")
-ui.button.default_props("outline dense")
-ui.select.default_props("outlined dense dense-options")
-ui.checkbox.default_props("dense")
+
+
+def load_element_css():
+    ui.add_head_html(
+        """
+    <style>
+        .full-size-stepper,
+        .full-size-stepper .q-stepper__content,
+        .full-size-stepper .q-stepper__step-content,
+        .full-size-stepper .q-stepper__step-inner {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .multi-line-notification {
+            white-space: pre-line;
+        }
+    </style>
+    """
+    )
 
 
 class ErrorAggregator:
