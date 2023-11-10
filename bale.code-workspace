@@ -13,7 +13,7 @@
 				"request": "launch",
 				"program": "main.py",
 				"console": "integratedTerminal",
-				"justMyCode": true
+				"justMyCode": false
 			},
 			{
 				"name": "Python: Current File",
@@ -33,6 +33,7 @@
 		"black-formatter.args": [
 			"-l",
 			"180"
-		]
+		],
+		"editor.suggest.showStatusBar": true
 	}
 }
