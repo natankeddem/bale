@@ -179,7 +179,7 @@ class DButton(ui.button):
 class DCheckbox(ui.checkbox):
     def __init__(self, text: str = "", *, value: bool = False, on_change: Callable[..., Any] | None = None) -> None:
         super().__init__(text, value=value, on_change=on_change)
-        self.tailwind.width("full").text_color("secondary")
+        self.tailwind.text_color("secondary")
 
 
 class IButton(ui.button):
