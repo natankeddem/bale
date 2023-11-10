@@ -34,6 +34,7 @@ def load_element_css():
     </style>
     """
     )
+    ui.add_head_html('<link href="static/jse-theme-dark.css" rel="stylesheet">')
 
 
 class ErrorAggregator:
@@ -276,3 +277,10 @@ def notify(
         )
     else:
         ui.notify(message=message, position="bottom-left", type=type)
+
+
+class JsonEditor(ui.json_editor):
+    def __init__(self, properties: Dict, *, on_select: Optional[Callable] = None, on_change: Optional[Callable] = None) -> None:
+        super().__init__(properties, on_select=on_select, on_change=on_change)
+        self.classes("jse-theme-dark")
+        self.tailwind.height("[360px]").width("full")
