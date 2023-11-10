@@ -19,6 +19,8 @@ class Automation:
     triggers: Dict[str, str]
     options: Union[Dict[str, Any], None] = None
     timestamp: float = field(default_factory=time.time)
+    pipe_success: bool
+    pipe_error: bool
 
     def to_dict(self) -> Dict[str, Any]:
         return self.__dict__
