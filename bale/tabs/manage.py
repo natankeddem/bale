@@ -302,7 +302,15 @@ class Manage(Tab):
                 for grow in grid.options["rowData"]:
                     if row["command"] == grow.command:
                         grow.status = "pending"
-                grid.update()
+            grid.update()
+
+        async def remove():
+            rows = await grid.get_selected_rows()
+            for row in rows:
+                for task in self._tasks:
+                    if row["timestamp"] == task.timestamp:
+                        self._tasks.remove(task)
+            grid.update()
 
         async def display_result(e):
             if e.args["data"]["result"] is not None:
@@ -366,7 +374,7 @@ class Manage(Tab):
                     el.DButton("Apply", on_click=apply)
                     el.DButton("Dry Run", on_click=dry_run)
                     el.DButton("Reset", on_click=reset)
-                    el.DButton("Remove", on_click=lambda: dialog.submit("finish"))
+                    el.DButton("Remove", on_click=remove)
                     el.DButton("Exit", on_click=lambda: dialog.submit("exit"))
                     el.Spinner(master=spinner)
 
