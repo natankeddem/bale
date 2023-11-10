@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from copy import deepcopy
@@ -9,16 +9,19 @@ import time
 class Result:
     name: str = ""
     command: str = ""
-    return_code: int = 0
+    return_code: Optional[int] = 0
     stdout_lines: List[str] = field(default_factory=list)
     stderr_lines: List[str] = field(default_factory=list)
     terminated: bool = False
     data: Any = None
-    failed: bool = False
     trace: str = ""
     cached: bool = False
     status: str = "success"
     timestamp: float = field(default_factory=time.time)
+
+    @property
+    def failed(self) -> bool:
+        return False if self.status == "success" else True
 
     @property
     def date(self) -> str:
@@ -36,8 +39,13 @@ class Result:
     def stderr(self) -> str:
         return "".join(self.stderr_lines)
 
+    @property
+    def properties(self) -> List:
+        return list(self.to_dict().keys())
+
     def to_dict(self):
         d = deepcopy(self.__dict__)
+        d["failed"] = self.failed
         d["date"] = self.date
         d["time"] = self.time
         d["stdout"] = self.stdout
@@ -52,7 +60,6 @@ class Result:
         self.stderr_lines = d["stderr_lines"]
         self.terminated = d["terminated"]
         self.data = d["data"]
-        self.failed = d["failed"]
         self.trace = d["trace"]
         self.cached = d["cached"]
         self.status = d["status"]
