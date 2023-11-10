@@ -136,9 +136,7 @@ class DSelect(ui.select):
         multiple: bool = False,
         clearable: bool = False,
     ) -> None:
-        super().__init__(
-            options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable
-        )
+        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable)
         self.tailwind.width("full")
         if multiple is True:
             self.props("use-chips")
@@ -156,9 +154,7 @@ class FSelect(ui.select):
         multiple: bool = False,
         clearable: bool = False,
     ) -> None:
-        super().__init__(
-            options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable
-        )
+        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable)
         self.tailwind.width("64")
 
 
