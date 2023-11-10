@@ -110,7 +110,7 @@ class Cli:
         finally:
             self._terminate.clear()
             self._busy = False
-        return Result(command=command, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=terminated)
+        return Result(command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=terminated)
 
     async def shell(self, command: str) -> Result:
         self._busy = True
@@ -132,7 +132,7 @@ class Cli:
             raise e
         finally:
             self._busy = False
-        return Result(command=command, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=False)
+        return Result(command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=False)
 
     def clear_buffers(self):
         self.prefix_line = ""
