@@ -275,10 +275,8 @@ class Manage(Tab):
             result = await self.zfs.execute(task.command)
             if result.stdout == "" and result.stderr == "":
                 status = "success"
-                result.failed = False
             else:
                 status = "error"
-                result.failed = True
             self._update_task_status(task.timestamp, status, result)
         spinner.visible = False
 
