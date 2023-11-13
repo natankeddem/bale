@@ -70,9 +70,7 @@ class Drawer(object):
         save = None
 
         async def send_key():
-            s = ssh.Ssh(
-                "data", host=host_input.value, hostname=hostname_input.value, username=username_input.value, password=password_input.value
-            )
+            s = ssh.Ssh("data", host=host_input.value, hostname=hostname_input.value, username=username_input.value, password=password_input.value)
             result = await s.send_key()
             if result.stdout.strip() != "":
                 el.notify(result.stdout.strip(), multi_line=True, type="positive")
