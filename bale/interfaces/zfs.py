@@ -95,15 +95,16 @@ class Zfs:
 
     def is_query_ready_to_execute(self, query: str, timeout: int):
         now = datetime.now()
-        if query in self._last_run_time:
+        if query in self._last_run_time and query in self._last_data:
             if (now - self._last_run_time[query]).total_seconds() > timeout:
-                self._last_run_time[query] = now
                 return True
             else:
                 return False
         else:
-            self._last_run_time[query] = now
             return True
+
+    def set_query_time(self, query: str):
+        self._last_run_time[query] = datetime.now()
 
     async def add_filesystem_prop(self, filesystem: str, prop: str, value: str) -> Result:
         result = await self.execute(f"zfs set {prop}={value} {filesystem}")
@@ -161,6 +162,7 @@ class Zfs:
             else:
                 data = []
             result = Result(data=data, cached=True)
+        self.set_query_time(query)
         return result
 
     async def find_files_in_snapshots(self, filesystem: str, pattern: str) -> Result:
@@ -204,6 +206,7 @@ class Zfs:
             result.data = self._last_data[query]
         else:
             result = Result(data=self._last_data[query], cached=True)
+        self.set_query_time(query)
         return result
 
     @property
@@ -225,6 +228,7 @@ class Zfs:
             result.data = self._last_data[query]
         else:
             result = Result(data=self._last_data[query], cached=True)
+        self.set_query_time(query)
         return result
 
 
