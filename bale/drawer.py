@@ -108,6 +108,7 @@ class Drawer(object):
                 default = Tab(spinner=None).common.get("default", "")
                 if default == name:
                     Tab(spinner=None).common["default"] = ""
+                ssh.Ssh(path="data", host=name).remove()
                 for row in self._table.rows:
                     if name == row["name"]:
                         self._table.remove_rows(row)
