@@ -13,6 +13,13 @@ logger = logging.getLogger(__name__)
 
 class Manage(Tab):
     def _build(self):
+        def set_auto(value: bool) -> None:
+            self.common.update({"auto": value})
+            if value is True:
+                el.notify("Automatic task handling enabled.", type="info")
+            else:
+                el.notify("Automatic task handling disabled.", type="info")
+
         def set_default(value) -> None:
             if value is True:
                 self.common.update({"default": self.host})
@@ -37,9 +44,10 @@ class Manage(Tab):
                 with ui.row().classes("items-center"):
                     self._default = ui.checkbox("Default", value=True if self.common.get("default", "") == self.host else False, on_change=lambda e: set_default(e.value))
                     self._default.props("left-label keep-color color=primary")
+                    self._default.tailwind.text_color("primary")
+                    self._auto = ui.checkbox("Auto", value=self.common.get("auto", False), on_change=lambda e: set_auto(e.value))
                     self._auto.props("left-label keep-color color=primary")
                     self._auto.tailwind.text_color("primary")
-                    self._auto.value = self.common.get("auto", False)
                     el.SmButton(text="Tasks", on_click=self._display_tasks)
                     el.SmButton(text="Refresh", on_click=self.display_snapshots)
             self._grid = ui.aggrid(
