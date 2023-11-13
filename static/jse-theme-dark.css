@@ -2,8 +2,8 @@
     --jse-theme: dark;
   
     /* over all fonts, sizes, and colors */
-    --jse-theme-color: #f59e0b;
-    --jse-theme-color-highlight: #f59e0b;
+    --jse-theme-color: #E48257;
+    --jse-theme-color-highlight: #E48257;
     --jse-background-color: #1e1e1e;
     --jse-text-color: #d4d4d4;
   
@@ -93,8 +93,8 @@
     --jse-button-secondary-background-highlight: #5d5d5d;
     --jse-button-secondary-background-disabled: #9d9d9d;
     --jse-button-secondary-color: var(--jse-text-color);
-    --jse-a-color: #f59e0b;
-    --jse-a-color-highlight: #f59e0b;
+    --jse-a-color: #E48257;
+    --jse-a-color-highlight: #E48257;
   
     /* svelte-select */
     --background: #3d3d3d;

@@ -11,8 +11,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-orange = "#f59e0b"
-dark = "#171717"
+orange = "#E48257"
+dark = "#0E1210"
 
 
 def load_element_css():
@@ -36,6 +36,26 @@ def load_element_css():
     """
     )
     ui.add_head_html('<link href="static/jse-theme-dark.css" rel="stylesheet">')
+    ui.add_head_html(
+        f"""
+    <style>
+        .bale-colors,
+        .q-table--dark, 
+        .q-table--dark .q-table__bottom,
+        .q-table--dark td,
+        .q-table--dark th,
+        .q-table--dark thead,
+        .q-table--dark tr,
+        .q-table__card--dark,
+        body.body--dark .q-drawer, 
+        body.body--dark .q-footer, 
+        body.body--dark .q-header {{
+            color: {orange} !important;
+            border-color: {orange} !important;
+        }}
+    </style>
+    """
+    )
 
 
 class ErrorAggregator:

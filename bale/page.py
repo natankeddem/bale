@@ -30,12 +30,12 @@ def build():
         ui.colors(
             primary=el.orange,
             secondary=el.orange,
-            accent="#d946ef",
+            accent=el.orange,
             dark=el.dark,
-            positive="#21ba45",
-            negative="#c10015",
-            info="#31ccec",
-            warning="#f2c037",
+            positive="#21BA45",
+            negative="#C10015",
+            info="#5C8984",
+            warning="#F2C037",
         )
         column = ui.column()
         content = Content()
