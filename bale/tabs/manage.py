@@ -13,6 +13,14 @@ logger = logging.getLogger(__name__)
 
 class Manage(Tab):
     def _build(self):
+        def set_default(value) -> None:
+            if value is True:
+                self.common.update({"default": self.host})
+                el.notify(f"Default host is now {self.host}.", type="info")
+            else:
+                self.common.update({"default": ""})
+                el.notify("Default host is now unset.", type="info")
+
         with el.WColumn() as col:
             col.tailwind.height("full")
             self._confirm = el.WRow()
@@ -27,7 +35,8 @@ class Manage(Tab):
                     el.SmButton(text="Browse", on_click=self._browse)
                     el.SmButton(text="Find", on_click=self._find)
                 with ui.row().classes("items-center"):
-                    self._auto = ui.checkbox("Auto", on_change=lambda e: self.common.update({"auto": e.value}))
+                    self._default = ui.checkbox("Default", value=True if self.common.get("default", "") == self.host else False, on_change=lambda e: set_default(e.value))
+                    self._default.props("left-label keep-color color=primary")
                     self._auto.props("left-label keep-color color=primary")
                     self._auto.tailwind.text_color("primary")
                     self._auto.value = self.common.get("auto", False)

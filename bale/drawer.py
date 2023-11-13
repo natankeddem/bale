@@ -107,6 +107,9 @@ class Drawer(object):
         result = await host_dialog
         if result == "save":
             if name != "" and name != host_input.value:
+                default = Tab(spinner=None).common.get("default", "")
+                if default == name:
+                    Tab(spinner=None).common["default"] = ""
                 for row in self._table.rows:
                     if name == row["name"]:
                         self._table.remove_rows(row)
