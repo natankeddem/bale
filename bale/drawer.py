@@ -22,40 +22,54 @@ class Drawer(object):
         self._selection_mode = None
 
     def build(self):
-        with ui.left_drawer(top_corner=True, bordered=True).props("width=200").classes("q-pt-sm q-pb-xs"):
-            with el.WColumn():
-                self._header_row = el.WRow().classes("justify-between")
-                self._header_row.tailwind().height("12")
-                with self._header_row:
-                    with ui.row():
-                        el.IButton(icon="add", on_click=self._display_host_dialog)
-                        self._buttons["remove"] = el.IButton(icon="remove", on_click=lambda: self._modify_host("remove"))
-                        self._buttons["edit"] = el.IButton(icon="edit", on_click=lambda: self._modify_host("edit"))
-                    ui.label(text="HOSTS").classes("text-secondary")
-                self._table = (
-                    ui.table(
-                        [
-                            {
-                                "name": "name",
-                                "label": "Name",
-                                "field": "name",
-                                "required": True,
-                                "align": "center",
-                                "sortable": True,
-                            }
-                        ],
-                        [],
-                        row_key="name",
-                        pagination={"rowsPerPage": 0, "sortBy": "name"},
-                        on_select=lambda e: self._selected(e),
+        def toggle_drawer():
+            if chevron._props["icon"] == "chevron_left":
+                content.visible = False
+                drawer.props("width=26")
+                chevron.props("icon=chevron_right")
+            else:
+                content.visible = True
+                drawer.props("width=226")
+                chevron.props("icon=chevron_left")
+
+        with ui.left_drawer(top_corner=True).props("width=226 behavior=desktop").classes("q-pa-none") as drawer:
+            with ui.row().classes("h-[100vh] justify-end gap-0"):
+                with ui.column().classes("h-[100vh] w-[200px] h-full q-py-xs q-px-sm") as content:
+                    self._header_row = el.WRow().classes("justify-between")
+                    self._header_row.tailwind().height("12")
+                    with self._header_row:
+                        with ui.row():
+                            el.IButton(icon="add", on_click=self._display_host_dialog)
+                            self._buttons["remove"] = el.IButton(icon="remove", on_click=lambda: self._modify_host("remove"))
+                            self._buttons["edit"] = el.IButton(icon="edit", on_click=lambda: self._modify_host("edit"))
+                        ui.label(text="HOSTS").classes("text-secondary")
+                    self._table = (
+                        ui.table(
+                            [
+                                {
+                                    "name": "name",
+                                    "label": "Name",
+                                    "field": "name",
+                                    "required": True,
+                                    "align": "center",
+                                    "sortable": True,
+                                }
+                            ],
+                            [],
+                            row_key="name",
+                            pagination={"rowsPerPage": 0, "sortBy": "name"},
+                            on_select=lambda e: self._selected(e),
+                        )
+                        .on("rowClick", self._clicked, [[], ["name"], None])
+                        .props("dense flat bordered binary-state-sort hide-header hide-pagination hide-selected-bannerhide-no-data")
                     )
-                    .on("rowClick", self._clicked, [[], ["name"], None])
-                    .props("hide-header hide-pagination hide-selected-banner dense flat bordered binary-state-sort")
-                    .classes("w-full text-secondary")
-                )
-                self._table.visible = False
-                for name in ssh.get_hosts("data"):
-                    self._add_host_to_table(name)
+                    self._table.tailwind.width("full")
+                    self._table.visible = False
+                    for name in ssh.get_hosts("data"):
+                        self._add_host_to_table(name)
+                with ui.column().classes("h-[100vh]"):
+                    chevron = ui.button(icon="chevron_left", color=None, on_click=toggle_drawer).props("square padding=0px").classes("h-full")
+                    chevron.props(f"color=primary text-color=accent")
 
     def _add_host_to_table(self, name):
         if len(name) > 0:
