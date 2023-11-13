@@ -1,6 +1,7 @@
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 from nicegui import ui, app, Tailwind
 from nicegui.elements.spinner import SpinnerTypes
+from nicegui.elements.tabs import Tab
 from nicegui.tailwind_types.height import Height
 from nicegui.tailwind_types.width import Width
 from nicegui.elements.mixins.validation_element import ValidationElement
@@ -284,3 +285,10 @@ class JsonEditor(ui.json_editor):
         super().__init__(properties, on_select=on_select, on_change=on_change)
         self.classes("jse-theme-dark")
         self.tailwind.height("[360px]").width("full")
+
+
+class ContentTabPanel(ui.tab_panel):
+    def __init__(self, name: Tab | str) -> None:
+        super().__init__(name)
+        self.style("height: calc(100vh - 131px)")
+        self.tailwind.min_width("[920px]")

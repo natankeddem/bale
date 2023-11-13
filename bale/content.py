@@ -27,6 +27,7 @@ class Content:
 
     def build(self):
         self._header = ui.header(bordered=True).classes("bg-dark q-pt-sm q-pb-xs")
+        self._header.tailwind.border_color(f"[{el.orange}]").min_width("[920px]")
         self._header.visible = False
         with self._header:
             with ui.row().classes("w-full h-12 justify-between items-center"):
@@ -35,7 +36,6 @@ class Content:
                     self._tab["manage"] = ui.tab(name="Manage").classes("text-secondary")
                     self._tab["automation"] = ui.tab(name="Automation").classes("text-secondary")
                     self._tab["history"] = ui.tab(name="History").classes("text-secondary")
-                    self._tab["settings"] = ui.tab(name="Settings").classes("text-secondary")
                 with ui.row().classes("items-center"):
                     self._spinner = el.Spinner()
                     self._host_display = ui.label().classes("text-secondary text-h4")
@@ -52,14 +52,12 @@ class Content:
 
     def _build_tab_panels(self):
         with self._tab_panels:
-            with ui.tab_panel(self._tab["manage"]).style("height: calc(100vh - 131px)"):
+            with el.ContentTabPanel(self._tab["manage"]):
                 self._manage = Manage(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["automation"]).style("height: calc(100vh - 131px)"):
+            with el.ContentTabPanel(self._tab["automation"]):
                 self._automation = Automation(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["history"]).style("height: calc(100vh - 131px)"):
+            with el.ContentTabPanel(self._tab["history"]):
                 self._history = History(spinner=self._spinner, host=self._host)
-            with ui.tab_panel(self._tab["settings"]).style("height: calc(100vh - 131px)"):
-                ui.label("settings tab")
 
     async def host_selected(self, name):
         self._host = name
