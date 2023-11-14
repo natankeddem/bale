@@ -105,7 +105,7 @@ class Tab:
                                 ui.label(f"Time: {result.time}").classes("text-secondary")
                     with el.Card() as card:
                         with el.WColumn():
-                            terminal = cli.Terminal(options={"rows": 20, "cols": 120, "convertEol": True})
+                            terminal = cli.Terminal(options={"rows": 18, "cols": 120, "convertEol": True})
                             for line in result.stdout_lines:
                                 terminal.call_terminal_method("write", line)
                             for line in result.stderr_lines:
