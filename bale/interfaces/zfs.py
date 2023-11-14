@@ -139,7 +139,7 @@ class Zfs:
             else:
                 with_holds = [snapshot]
             if len(with_holds) > 0:
-                result = await self.execute(f"zfs holds -H -r {with_holds}")
+                result = await self.execute(f"zfs holds -H -r {with_holds}", notify=False)
                 tags: Dict[str, list[str]] = {}
                 for line in result.stdout_lines:
                     matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<tag>[^\t]+)\t(?P<creation>[^\n]+)", line)
@@ -191,7 +191,7 @@ class Zfs:
     async def filesystems(self) -> Result:
         query = "filesystems"
         if self.is_query_ready_to_execute(query, 60):
-            result = await self.execute("zfs list -Hp -t filesystem -o name,used,avail,refer,mountpoint")
+            result = await self.execute("zfs list -Hp -t filesystem -o name,used,avail,refer,mountpoint", notify=False)
             filesystems = dict()
             for line in result.stdout_lines:
                 matches = re.match(
@@ -213,7 +213,7 @@ class Zfs:
     async def snapshots(self) -> Result:
         query = "snapshots"
         if self.is_query_ready_to_execute(query, 60):
-            result = await self.execute("zfs list -Hp -t snapshot -o name,used,creation,userrefs")
+            result = await self.execute("zfs list -Hp -t snapshot -o name,used,creation,userrefs", notify=False)
             snapshots = dict()
             for line in result.stdout_lines:
                 matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<used_bytes>[^\t]+)\t(?P<creation>[^\t]+)\t(?P<userrefs>[^\n]+)", line)
