@@ -44,7 +44,7 @@ class Content:
         self._tab_panels = (
             ui.tab_panels(self._tabs, value="Manage", on_change=lambda e: self._tab_changed(e), animated=False).classes("w-full h-full").bind_visibility_from(self._header)
         )
-        ui.timer(0.1, self.select_default, once=True)
+        ui.timer(1, self.select_default, once=True)
 
     async def select_default(self):
         tab = Tab(spinner=None)
