@@ -17,26 +17,6 @@ dark = "#0E1210"
 
 def load_element_css():
     ui.add_head_html(
-        """
-    <style>
-        .full-size-stepper,
-        .full-size-stepper .q-stepper__content,
-        .full-size-stepper .q-stepper__step-content,
-        .full-size-stepper .q-stepper__step-inner {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .multi-line-notification {
-            white-space: pre-line;
-        }
-    </style>
-    """
-    )
-    ui.add_head_html('<link href="static/jse-theme-dark.css" rel="stylesheet">')
-    ui.add_head_html(
         f"""
     <style>
         .bale-colors,
@@ -53,9 +33,26 @@ def load_element_css():
             color: {orange} !important;
             border-color: {orange} !important;
         }}
+        .full-size-stepper,
+        .full-size-stepper .q-stepper__content,
+        .full-size-stepper .q-stepper__step-content,
+        .full-size-stepper .q-stepper__step-inner {{
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
+        .multi-line-notification {{
+            white-space: pre-line;
+        }}
+        .q-drawer--bordered{{
+            border-color: {orange} !important;
+        }}
     </style>
     """
     )
+    ui.add_head_html('<link href="static/jse-theme-dark.css" rel="stylesheet">')
 
 
 class ErrorAggregator:
