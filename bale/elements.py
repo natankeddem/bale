@@ -11,7 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-orange = "#E48257"
+orange = "#E97451"
 dark = "#0E1210"
 
 
