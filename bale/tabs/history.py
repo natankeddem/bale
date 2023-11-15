@@ -116,7 +116,7 @@ class History(Tab):
             http[status]["headers"] = editor.properties["content"]["json"]["headers"]
 
         with ui.dialog() as host_dialog, el.Card():
-            with el.DBody(height="[90vh]", width="[560px]"):
+            with el.DBody(height="[90vh]", width="[720px]"):
                 with ui.stepper() as stepper:
                     with ui.step("General"):
                         with el.WColumn().classes("col justify-start"):
