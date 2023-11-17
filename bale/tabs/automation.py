@@ -535,6 +535,8 @@ class Automation(Tab):
                 while target_path not in self.target_path.options and tries < 20:
                     await asyncio.sleep(0.1)
                     tries = tries + 1
+                if target_path not in self.target_paths:
+                    self.target_paths.append(target_path)
                 self.target_path.value = target_path
                 self.parentchildren.value = self.fs["values"].get("parentchildren", None)
                 self.parent.value = self.fs["values"].get("parent", None)
