@@ -1,3 +1,4 @@
+import asyncio
 from nicegui import ui
 from bale import elements as el
 import bale.logo as logo
@@ -26,7 +27,7 @@ class Content:
         self._automation = None
         self._history = None
 
-    def build(self):
+    async def build(self):
         self._header = ui.header(bordered=True).classes("bg-dark q-pt-sm q-pb-xs")
         self._header.tailwind.border_color(f"[{el.orange}]").min_width("[920px]")
         self._header.visible = False
@@ -44,11 +45,7 @@ class Content:
         self._tab_panels = (
             ui.tab_panels(self._tabs, value="Manage", on_change=lambda e: self._tab_changed(e), animated=False).classes("w-full h-full").bind_visibility_from(self._header)
         )
-        ui.timer(1, self.select_default, once=True)
-
-    async def select_default(self):
-        tab = Tab(spinner=None)
-        default = tab.common.get("default", "")
+        default = Tab(spinner=None).common.get("default", "")
         if default != "":
             await self.host_selected(default)
 
