@@ -162,16 +162,17 @@ class FInput(ui.input):
 class DSelect(ui.select):
     def __init__(
         self,
-        options: List | Dict,
+        options: Union[List, Dict],
         *,
-        label: str | None = None,
+        label: Optional[str] = None,
         value: Any = None,
-        on_change: Callable[..., Any] | None = None,
+        on_change: Optional[Callable[..., Any]] = None,
         with_input: bool = False,
+        new_value_mode: Optional[Literal["add", "add-unique", "toggle"]] = None,
         multiple: bool = False,
         clearable: bool = False,
     ) -> None:
-        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable)
+        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, new_value_mode=new_value_mode, multiple=multiple, clearable=clearable)
         self.tailwind.width("full")
         if multiple is True:
             self.props("use-chips")
@@ -180,16 +181,17 @@ class DSelect(ui.select):
 class FSelect(ui.select):
     def __init__(
         self,
-        options: List | Dict,
+        options: Union[List, Dict],
         *,
-        label: str | None = None,
+        label: Optional[str] = None,
         value: Any = None,
-        on_change: Callable[..., Any] | None = None,
+        on_change: Optional[Callable[..., Any]] = None,
         with_input: bool = False,
+        new_value_mode: Optional[Literal["add", "add-unique", "toggle"]] = None,
         multiple: bool = False,
         clearable: bool = False,
     ) -> None:
-        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, multiple=multiple, clearable=clearable)
+        super().__init__(options, label=label, value=value, on_change=on_change, with_input=with_input, new_value_mode=new_value_mode, multiple=multiple, clearable=clearable)
         self.tailwind.width("64")
 
 

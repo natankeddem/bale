@@ -491,10 +491,10 @@ class Automation(Tab):
                 row.tailwind.width("[860px]").justify_content("center")
                 with ui.column() as col:
                     col.tailwind.height("full").width("[420px]")
-                    self.hosts = el.DSelect(source_hosts, label="Source Host(s)", multiple=True, with_input=True)
                     self.target_host = el.DSelect(target_host, label="Target Host", on_change=target_host_selected)
                     self.target_paths = [""]
-                    self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", on_change=target_path_selected)
+                    self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", new_value_mode="add-unique", on_change=target_path_selected)
+                    self.hosts = el.DSelect(source_hosts, label="Source Host(s)", multiple=True, with_input=True)
                     all_fs_to_lists()
                     with ui.scroll_area().classes("col"):
                         self.parentchildren = el.DSelect(
