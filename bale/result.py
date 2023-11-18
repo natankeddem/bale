@@ -13,6 +13,7 @@ class Result:
     stdout_lines: List[str] = field(default_factory=list)
     stderr_lines: List[str] = field(default_factory=list)
     terminated: bool = False
+    truncated: bool = False
     data: Any = None
     trace: str = ""
     cached: bool = False

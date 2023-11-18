@@ -34,6 +34,7 @@ class Cli:
         self.stderr: List[str] = []
         self._terminate: asyncio.Event = asyncio.Event()
         self._busy: bool = False
+        self._truncated: bool = False
         self.prefix_line: str = ""
         self._stdout_terminals: List[Terminal] = []
         self._stderr_terminals: List[Terminal] = []
@@ -70,8 +71,11 @@ class Cli:
             else:
                 break
 
-    async def _controller(self, process: Process) -> None:
+    async def _controller(self, process: Process, max_output_lines) -> None:
         while process.returncode is None:
+            if max_output_lines > 0 and len(self.stderr) + len(self.stdout) > max_output_lines:
+                self._truncated = True
+                process.terminate()
             if self._terminate.is_set():
                 process.terminate()
             try:
@@ -83,7 +87,7 @@ class Cli:
     def terminate(self) -> None:
         self._terminate.set()
 
-    async def execute(self, command: str) -> Result:
+    async def execute(self, command: str, max_output_lines: int = 0) -> Result:
         self._busy = True
         c = shlex.split(command, posix=False)
         try:
@@ -92,13 +96,14 @@ class Cli:
                 self.stdout.clear()
                 self.stderr.clear()
                 self._terminate.clear()
+                self._truncated = False
                 terminated = False
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 self.prefix_line = f"<{now}> {command}\n"
                 for terminal in self._stdout_terminals:
                     terminal.call_terminal_method("write", "\n" + self.prefix_line)
                 await asyncio.gather(
-                    self._controller(process=process),
+                    self._controller(process=process, max_output_lines=max_output_lines),
                     self._read_stdout(stream=process.stdout),
                     self._read_stderr(stream=process.stderr),
                 )
@@ -110,7 +115,9 @@ class Cli:
         finally:
             self._terminate.clear()
             self._busy = False
-        return Result(command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=terminated)
+        return Result(
+            command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=terminated, truncated=self._truncated
+        )
 
     async def shell(self, command: str) -> Result:
         self._busy = True

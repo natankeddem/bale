@@ -81,7 +81,7 @@ class Zfs:
         command = command if len(command) < 160 else command[:160] + "..."
         el.notify(command)
 
-    async def execute(self, command: str, notify: bool = True) -> Result:
+    async def execute(self, command: str, max_output_lines: int = 0, notify: bool = True) -> Result:
         if notify:
             self.notify(command)
         return Result(command=command)
@@ -244,10 +244,10 @@ class Ssh(ssh.Ssh, Zfs):
     def notify(self, command: str):
         super().notify(f"<{self.host}> {command}")
 
-    async def execute(self, command: str, notify: bool = True) -> Result:
+    async def execute(self, command: str, max_output_lines: int = 0, notify: bool = True) -> Result:
         if notify:
             self.notify(command)
-        result = await super().execute(command)
+        result = await super().execute(command, max_output_lines)
         if result.stderr != "":
             el.notify(result.stderr, type="negative")
         result.name = self.host

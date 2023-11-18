@@ -90,10 +90,10 @@ class Ssh(Cli):
         del self._config[self.host]
         self.write_config()
 
-    async def execute(self, command: str) -> Result:
+    async def execute(self, command: str, max_output_lines: int = 0) -> Result:
         self._base_cmd = f"{'' if self.use_key else f'sshpass -p {self.password} '} ssh -F {self._config_path} {self.host}"
         self._full_cmd = f"{self._base_cmd} {command}"
-        return await super().execute(self._full_cmd)
+        return await super().execute(self._full_cmd, max_output_lines)
 
     async def send_key(self) -> Result:
         await get_public_key(self._raw_path)
