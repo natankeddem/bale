@@ -47,8 +47,16 @@ class History(Tab):
                             "filter": "agTextColumnFilter",
                             "flex": 1,
                         },
-                        {"headerName": "Date", "field": "date", "filter": "agDateColumnFilter", "maxWidth": 100},
-                        {"headerName": "Time", "field": "time", "maxWidth": 100},
+                        {
+                            "headerName": "Timestamp",
+                            "field": "timestamp",
+                            "filter": "agTextColumnFilter",
+                            "maxWidth": 200,
+                            ":cellRenderer": """(data) => {
+                                var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
+                                return date;
+                            }""",
+                        },
                         {
                             "headerName": "Status",
                             "field": "status",

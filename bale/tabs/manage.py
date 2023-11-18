@@ -75,11 +75,19 @@ class Manage(Tab):
                             "field": "used",
                             "maxWidth": 100,
                             ":comparator": """(valueA, valueB, nodeA, nodeB, isInverted) => {
-                                                return (nodeA.data.used_bytes > nodeB.data.used_bytes) ? -1 : 1;
-                                            }""",
+                                return (nodeA.data.used_bytes > nodeB.data.used_bytes) ? -1 : 1;
+                            }""",
                         },
-                        {"headerName": "Creation Date", "field": "creation_date", "filter": "agDateColumnFilter", "maxWidth": 150},
-                        {"headerName": "Creation Time", "field": "creation_time", "maxWidth": 150},
+                        {
+                            "headerName": "Created",
+                            "field": "creation",
+                            "filter": "agTextColumnFilter",
+                            "maxWidth": 200,
+                            ":cellRenderer": """(data) => {
+                                var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
+                                return date;
+                            }""",
+                        },
                         {"headerName": "Holds", "field": "userrefs", "filter": "agNumberColumnFilter", "maxWidth": 100},
                     ],
                     "rowData": [],

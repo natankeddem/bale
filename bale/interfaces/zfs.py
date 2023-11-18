@@ -180,8 +180,10 @@ class Zfs:
                     if matches is not None:
                         md = matches.groupdict()
                         md["path"] = f"{md['location']}/{md['name']}"
-                        md["size"] = format_bytes(int(md["bytes"]))
+                        md["bytes"] = int(md["bytes"])
+                        md["size"] = format_bytes(md["bytes"])
                         md["modified_datetime"] = datetime.fromtimestamp(float(md["modified_timestamp"])).strftime("%Y/%m/%d %H:%M:%S")
+                        md["modified_timestamp"] = float(md["modified_timestamp"])
                         files.append(md)
                 result.data = files
                 return result
@@ -219,9 +221,11 @@ class Zfs:
                 matches = re.match("^(?P<filesystem>[^@]+)@(?P<name>[^\t]+)\t(?P<used_bytes>[^\t]+)\t(?P<creation>[^\t]+)\t(?P<userrefs>[^\n]+)", line)
                 if matches is not None:
                     md = matches.groupdict()
-                    md["creation_date"] = datetime.fromtimestamp(int(md["creation"])).strftime("%Y/%m/%d")
-                    md["creation_time"] = datetime.fromtimestamp(int(md["creation"])).strftime("%H:%M")
-                    md["used"] = format_bytes(int(md["used_bytes"]))
+                    md["used_bytes"] = int(md["used_bytes"])
+                    md["creation"] = int(md["creation"])
+                    md["creation_date"] = datetime.fromtimestamp(md["creation"]).strftime("%Y/%m/%d")
+                    md["creation_time"] = datetime.fromtimestamp(md["creation"]).strftime("%H:%M")
+                    md["used"] = format_bytes(md["used_bytes"])
                     snapshot = f"{md['filesystem']}@{md['name']}"
                     snapshots[snapshot] = md
             self._last_data[query] = snapshots

@@ -226,9 +226,7 @@ class SshFileFind(SshFileBrowse):
             with el.DBody(height="fit", width="[90vw]"):
                 with el.WColumn().classes("col"):
                     filesystems = await self._zfs.filesystems
-                    self._filesystem = el.DSelect(
-                        list(filesystems.data.keys()), label="filesystem", with_input=True, on_change=self._update_grid
-                    )
+                    self._filesystem = el.DSelect(list(filesystems.data.keys()), label="filesystem", with_input=True, on_change=self._update_grid)
                     self._pattern = el.DInput("Pattern", on_change=self._update_grid)
                     self._grid = ui.aggrid(
                         {
@@ -237,12 +235,14 @@ class SshFileFind(SshFileBrowse):
                                 {"field": "name", "headerName": "Name", "flex": 1, "sort": "desc", "resizable": True},
                                 {"field": "location", "headerName": "Location", "flex": 1, "resizable": True},
                                 {
-                                    "field": "modified_datetime",
                                     "headerName": "Modified",
+                                    "field": "modified_timestamp",
+                                    "filter": "agTextColumnFilter",
                                     "maxWidth": 200,
-                                    ":comparator": """(valueA, valueB, nodeA, nodeB, isInverted) => {
-                                            return (nodeA.data.modified_timestamp > nodeB.data.modified_timestamp) ? -1 : 1;
-                                        }""",
+                                    ":cellRenderer": """(data) => {
+                                        var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
+                                        return date;
+                                    }""",
                                 },
                                 {
                                     "field": "size",
