@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def build():
-    @ui.page("/")
+    @ui.page("/", response_timeout=30)
     async def index(client: Client) -> None:
         app.add_static_files("/static", "static")
         el.load_element_css()

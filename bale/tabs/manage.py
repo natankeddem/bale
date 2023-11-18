@@ -1,6 +1,6 @@
 import asyncio
 from copy import deepcopy
-from nicegui import ui
+from nicegui import background_tasks, ui
 from . import SelectionConfirm, Tab, Task
 from bale.result import Result
 from bale import elements as el
@@ -92,8 +92,8 @@ class Manage(Tab):
         self._spinner.visible = True
         self.zfs.invalidate_query()
         snapshots = await self.zfs.snapshots
-        await self.zfs.filesystems
-        await self.zfs.holds_for_snapshot()
+        background_tasks.create(self.zfs.filesystems, name="zfs_filesystems")
+        background_tasks.create(self.zfs.holds_for_snapshot(), name="zfs_holds")
         self._grid.options["rowData"] = list(snapshots.data.values())
         self._grid.update()
         self._spinner.visible = False
