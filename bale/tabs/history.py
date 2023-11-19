@@ -1,7 +1,8 @@
 from datetime import datetime
 import json
-from . import SelectionConfirm, Tab
 from nicegui import ui, events
+import httpx
+from . import SelectionConfirm, Tab
 from bale import elements as el
 from bale.result import Result
 from bale.interfaces import zfs
@@ -98,6 +99,20 @@ class History(Tab):
             http[status]["data"] = e.content["json"]["data"]
             http[status]["headers"] = e.content["json"]["headers"]
 
+        def test(status):
+            try:
+                url = http[status]["url"]
+                data = self.process_pipe_data(result=Result(name=self.host, command="TEST COMMAND", status=status), data=http[status]["data"])
+                headers = http[status]["headers"]
+                post = httpx.post(url=url, json=data, headers=headers)
+                print(post.status_code)
+                if post.status_code == 200:
+                    el.notify("Test successful!", type="positive")
+                else:
+                    el.notify(f"Test failed with status code {post.status_code}!", type="negative")
+            except:
+                el.notify("Test failed!", type="negative")
+
         def show_controls(status):
             if status not in http:
                 http[status] = {}
@@ -115,7 +130,7 @@ class History(Tab):
                     "topic": "mytopic",
                     "tags": ["turtle"],
                     "title": "Successful Automation Run for {name}",
-                    "message": "{stdout}",
+                    "message": "{command}",
                 },
             )
             editor.properties["content"]["json"]["headers"] = self.get_pipe_status("http", status).get("headers", {"Authorization": "Bearer tk_..."})
@@ -134,11 +149,15 @@ class History(Tab):
                     with ui.step("On Success"):
                         with el.WColumn().classes("col justify-start"):
                             show_controls(status="success")
-                        el.LgButton("NEXT", on_click=lambda _: stepper.next())
+                        with el.WRow():
+                            el.LgButton("TEST", on_click=lambda _: test(status="success"))
+                            el.LgButton("NEXT", on_click=lambda _: stepper.next())
                     with ui.step("On Error"):
                         with el.WColumn().classes("col justify-start"):
                             show_controls(status="error")
-                        el.DButton("SAVE", on_click=lambda: host_dialog.submit("save"))
+                        with el.WRow():
+                            el.LgButton("TEST", on_click=lambda _: test(status="error"))
+                            el.DButton("SAVE", on_click=lambda: host_dialog.submit("save"))
 
         result = await host_dialog
         if result == "save":
