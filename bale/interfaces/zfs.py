@@ -166,27 +166,28 @@ class Zfs:
         return result
 
     async def find_files_in_snapshots(self, filesystem: str, pattern: str) -> Result:
-        filesystems = await self.filesystems
-        if filesystem in filesystems.data.keys():
-            if "mountpoint" in filesystems.data[filesystem]:
-                command = f"find {filesystems.data[filesystem]['mountpoint']}/.zfs/snapshot -type f -name '{pattern}' -printf '%h\t%f\t%s\t%T@\n'"
-                result = await self.execute(command=command, notify=False)
-                files = []
-                for line in result.stdout_lines:
-                    matches = re.match(
-                        "^(?P<location>[^\t]+)\t(?P<name>[^\t]+)\t(?P<bytes>[^\t]+)\t(?P<modified_timestamp>[^\n]+)",
-                        line,
-                    )
-                    if matches is not None:
-                        md = matches.groupdict()
-                        md["path"] = f"{md['location']}/{md['name']}"
-                        md["bytes"] = int(md["bytes"])
-                        md["size"] = format_bytes(md["bytes"])
-                        md["modified_datetime"] = datetime.fromtimestamp(float(md["modified_timestamp"])).strftime("%Y/%m/%d %H:%M:%S")
-                        md["modified_timestamp"] = float(md["modified_timestamp"])
-                        files.append(md)
-                result.data = files
-                return result
+        try:
+            filesystems = await self.filesystems
+            command = f"find {filesystems.data[filesystem]['mountpoint']}/.zfs/snapshot -type f -name '{pattern}' -printf '%h\t%f\t%s\t%T@\n'"
+            result = await self.execute(command=command, notify=False, max_output_lines=1000)
+            files = []
+            for line in result.stdout_lines:
+                matches = re.match(
+                    "^(?P<location>[^\t]+)\t(?P<name>[^\t]+)\t(?P<bytes>[^\t]+)\t(?P<modified_timestamp>[^\n]+)",
+                    line,
+                )
+                if matches is not None:
+                    md = matches.groupdict()
+                    md["path"] = f"{md['location']}/{md['name']}"
+                    md["bytes"] = int(md["bytes"])
+                    md["size"] = format_bytes(md["bytes"])
+                    md["modified_datetime"] = datetime.fromtimestamp(float(md["modified_timestamp"])).strftime("%Y/%m/%d %H:%M:%S")
+                    md["modified_timestamp"] = float(md["modified_timestamp"])
+                    files.append(md)
+            result.data = files
+            return result
+        except KeyError:
+            pass
         return Result()
 
     @property

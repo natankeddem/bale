@@ -3,7 +3,7 @@ from pathlib import Path
 import stat
 from datetime import datetime
 import uuid
-from nicegui import app, events, ui
+from nicegui import app, background_tasks, events, ui
 from fastapi.responses import StreamingResponse
 import asyncssh
 from bale import elements as el
@@ -87,7 +87,7 @@ class SshFileBrowse(ui.dialog):
                     row.tailwind.height("[40px]")
                     el.DButton("Download", on_click=self._start_download)
                     ui.button("Exit", on_click=lambda: self.submit("exit"))
-        await self._update_grid()
+        await self._update_handler()
 
     async def _connect(self) -> Tuple[asyncssh.SSHClientConnection, asyncssh.SFTPClient]:
         ssh = await asyncssh.connect(self._zfs.hostname, username=self._zfs.username, client_keys=[self._zfs.key_path])
@@ -137,7 +137,7 @@ class SshFileBrowse(ui.dialog):
             "permissions": attributes.permissions,
         }
 
-    async def _update_grid(self) -> None:
+    async def _update_handler(self) -> None:
         self._grid.call_api_method("showLoadingOverlay")
         if self._ssh is None or self._sftp is None:
             self._ssh, self._sftp = await self._connect()
@@ -165,7 +165,7 @@ class SshFileBrowse(ui.dialog):
     async def _handle_double_click(self, e: events.GenericEventArguments) -> None:
         self.path = e.args["data"]["path"]
         if e.args["data"]["type"] == "directory":
-            await self._update_grid()
+            await self._update_handler()
         else:
             await self._start_download(e)
 
@@ -226,8 +226,10 @@ class SshFileFind(SshFileBrowse):
             with el.DBody(height="fit", width="[90vw]"):
                 with el.WColumn().classes("col"):
                     filesystems = await self._zfs.filesystems
-                    self._filesystem = el.DSelect(list(filesystems.data.keys()), label="filesystem", with_input=True, on_change=self._update_grid)
-                    self._pattern = el.DInput("Pattern", on_change=self._update_grid)
+                    self._filesystem = el.DSelect(list(filesystems.data.keys()), label="filesystem", with_input=True, on_change=self._update_handler)
+                    with el.WRow():
+                        self._pattern = ui.input("Pattern").classes("col").on("keydown.enter", handler=self._update_handler)
+                        el.LgButton(icon="search", on_click=self._update_handler)
                     self._grid = ui.aggrid(
                         {
                             "defaultColDef": {"flex": 1, "sortable": True, "suppressMovable": True, "sortingOrder": ["asc", "desc"]},
@@ -264,15 +266,21 @@ class SshFileFind(SshFileBrowse):
                     row.tailwind.height("[40px]")
                     el.DButton("Download", on_click=self._start_download)
                     ui.button("Exit", on_click=lambda: self.submit("exit"))
-            await self._update_grid()
+                self._grid.call_api_method("hideOverlay")
 
-    async def _update_grid(self) -> None:
-        self._grid.call_api_method("showLoadingOverlay")
-        if self._filesystem is not None:
+    async def _update_handler(self) -> None:
+        if len(self._pattern.value) > 0 and self._filesystem is not None:
+            self._grid.call_api_method("showLoadingOverlay")
+            self._filesystem.props("readonly")
+            self._pattern.props("readonly")
             files = await self._zfs.find_files_in_snapshots(filesystem=self._filesystem.value, pattern=self._pattern.value)
             self._grid.options["rowData"] = files.data
-        self._grid.update()
-        self._grid.call_api_method("hideOverlay")
+            if files.truncated is True:
+                el.notify("Too many files found, truncating list.", type="warning")
+            self._grid.update()
+            self._filesystem.props(remove="readonly")
+            self._pattern.props(remove="readonly")
+            self._grid.call_api_method("hideOverlay")
 
     async def _handle_double_click(self, e: events.GenericEventArguments) -> None:
         await self._start_download(e)

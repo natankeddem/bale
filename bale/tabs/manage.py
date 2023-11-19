@@ -111,9 +111,12 @@ class Manage(Tab):
         result = await SelectionConfirm(container=self._confirm, label=">BROWSE<")
         if result == "confirm":
             rows = await self._grid.get_selected_rows()
-            filesystems = await self.zfs.filesystems
-            mount_path = filesystems.data[rows[0]["filesystem"]]["mountpoint"]
-            await sshdl.SshFileBrowse(zfs=self.zfs, path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}")
+            try:
+                filesystems = await self.zfs.filesystems
+                mount_path = filesystems.data[rows[0]["filesystem"]]["mountpoint"]
+                await sshdl.SshFileBrowse(zfs=self.zfs, path=f"{mount_path}/.zfs/snapshot/{rows[0]['name']}")
+            except KeyError:
+                el.notify(f"Unable to browse {rows[0]['filesystem']}", type="warning")
         self._set_selection()
 
     async def _find(self) -> None:
