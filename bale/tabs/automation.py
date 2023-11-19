@@ -161,8 +161,16 @@ class Automation(Tab):
                             "maxWidth": 150,
                         },
                         {"headerName": "Command", "field": "command", "filter": "agTextColumnFilter"},
-                        {"headerName": "Next Date", "field": "next_run_date", "filter": "agDateColumnFilter", "maxWidth": 100},
-                        {"headerName": "Next Time", "field": "next_run_time", "maxWidth": 100},
+                        {
+                            "headerName": "Next Run",
+                            "field": "next_run",
+                            "filter": "agTextColumnFilter",
+                            "maxWidth": 125,
+                            ":cellRenderer": """(data) => {
+                                var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
+                                return date;
+                            }""",
+                        },
                         {
                             "headerName": "Status",
                             "field": "status",
@@ -227,11 +235,9 @@ class Automation(Tab):
         self._automations.clear()
         for job in self.scheduler.scheduler.get_jobs():
             if job.next_run_time is not None:
-                next_run_date = job.next_run_time.strftime("%Y/%m/%d")
-                next_run_time = job.next_run_time.strftime("%H:%M")
+                next_run = job.next_run_time.timestamp()
             else:
-                next_run_date = "NA"
-                next_run_time = "NA"
+                next_run = "NA"
             if "data" in job.kwargs:
                 jd = json.loads(job.kwargs["data"])
                 if self.host == jd["host"]:
@@ -239,8 +245,7 @@ class Automation(Tab):
                         {
                             "name": job.id.split("@")[0],
                             "command": jd["command"],
-                            "next_run_date": next_run_date,
-                            "next_run_time": next_run_time,
+                            "next_run": next_run,
                             "status": "",
                         }
                     )

@@ -52,7 +52,7 @@ class History(Tab):
                             "headerName": "Timestamp",
                             "field": "timestamp",
                             "filter": "agTextColumnFilter",
-                            "maxWidth": 200,
+                            "maxWidth": 125,
                             ":cellRenderer": """(data) => {
                                 var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
                                 return date;
