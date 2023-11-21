@@ -71,8 +71,11 @@ class ErrorAggregator:
 
     @property
     def no_errors(self) -> bool:
-        validators = all(validation(element.value) for element in self.elements for validation in element.validation.values())
-        return self.enable and validators
+        if len(self.elements) > 0:
+            validators = all(validation(element.value) for element in self.elements for validation in element.validation.values())
+            return self.enable and validators
+        else:
+            return True
 
 
 class WColumn(ui.column):
