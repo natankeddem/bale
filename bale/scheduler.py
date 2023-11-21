@@ -11,6 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 @dataclass(kw_only=True)
 class Automation:
     id: str
+    name: str
     app: str
     hosts: List[str]
     host: str
@@ -30,6 +31,7 @@ class Automation:
 class Zfs_Autobackup(Automation):
     app: str = "zfs_autobackup"
     execute_mode: str = "local"
+    prop: str
     target_host: str
     target_path: str
     target_paths: List[str]

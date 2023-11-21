@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Callable, Dict, List, Union
 import asyncio
 from datetime import datetime
 import json
@@ -36,20 +36,20 @@ def populate_job_handler(app: str, job_id: str, host: str):
     return job_handlers[job_id]
 
 
-class CommandTemplate(string.Template):
+class AutomationTemplate(string.Template):
     delimiter = ""
 
 
 async def automation_job(**kwargs) -> None:
     if "data" in kwargs:
         jd = json.loads(kwargs["data"])
-        command = CommandTemplate(jd["command"])
+        command = AutomationTemplate(jd["command"])
         tab = Tab(host=None, spinner=None)
         if jd["app"] == "zfs_autobackup":
             d = scheduler.Zfs_Autobackup(**jd)
             populate_job_handler(app=d.app, job_id=d.id, host=d.host)
             if job_handlers[d.id].is_busy is False:
-                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result = await job_handlers[d.id].execute(command.safe_substitute(name=d.name, host=d.host))
                 result.name = d.host
                 result.status = "success" if result.return_code == 0 else "error"
                 if d.pipe_success is True and result.status == "success":
@@ -63,7 +63,7 @@ async def automation_job(**kwargs) -> None:
             d = scheduler.Automation(**jd)
             populate_job_handler(app=d.app, job_id=d.id, host=d.host)
             if job_handlers[d.id].is_busy is False:
-                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result = await job_handlers[d.id].execute(command.safe_substitute(name=d.name, host=d.host))
                 result.name = d.host
                 if d.pipe_success is True and result.status == "success":
                     tab.pipe_result(result=result)
@@ -76,7 +76,7 @@ async def automation_job(**kwargs) -> None:
             d = scheduler.Automation(**jd)
             populate_job_handler(app=d.app, job_id=d.id, host=d.host)
             if job_handlers[d.id].is_busy is False:
-                result = await job_handlers[d.id].execute(command.safe_substitute(host=d.host))
+                result = await job_handlers[d.id].execute(command.safe_substitute(name=d.name, host=d.host))
                 result.name = d.host
                 if d.pipe_success is True and result.status == "success":
                     tab.pipe_result(result=result)
@@ -99,7 +99,7 @@ class Automation(Tab):
         self.job_data: Dict[str, str] = {}
         self.job_names: List[str] = []
         self.default_options: Dict[str, str] = {}
-        self.build_command: str = ""
+        self.build_command: Callable
         self.target_host: el.DSelect
         self.target_paths: List[str] = [""]
         self.target_path: el.DSelect
@@ -308,26 +308,17 @@ class Automation(Tab):
             await self._create_automation(rows[0]["name"])
         self._set_selection()
 
-    async def _add_prop_to_fs(
-        self,
-        host: str,
-        prop: str,
-        value: str,
-        module: str = "autobackup",
-        filesystems: Union[List[str], None] = None,
-    ) -> None:
+    async def _add_prop_to_fs(self, host: str, prop: str, value: str, filesystems: Union[List[str], None] = None) -> None:
         if filesystems is not None:
-            full_prop = f"{module}:{prop}"
             for fs in filesystems:
-                result = await self._zfs[host].add_filesystem_prop(filesystem=fs, prop=full_prop, value=value)
+                result = await self._zfs[host].add_filesystem_prop(filesystem=fs, prop=prop, value=value)
                 self.add_history(result=result)
 
-    async def _remove_prop_from_all_fs(self, host: str, prop: str, module: str = "autobackup") -> None:
-        full_prop = f"{module}:{prop}"
-        filesystems_with_prop_result = await self._zfs[host].filesystems_with_prop(full_prop)
+    async def _remove_prop_from_all_fs(self, host: str, prop: str) -> None:
+        filesystems_with_prop_result = await self._zfs[host].filesystems_with_prop(prop)
         filesystems_with_prop = list(filesystems_with_prop_result.data)
         for fs in filesystems_with_prop:
-            result = await self._zfs[host].remove_filesystem_prop(filesystem=fs, prop=full_prop)
+            result = await self._zfs[host].remove_filesystem_prop(filesystem=fs, prop=prop)
             self.add_history(result=result)
 
     async def _create_automation(self, name: str = "") -> None:
@@ -421,15 +412,16 @@ class Automation(Tab):
                     self.target_path.update()
                     self.target_path.value = ""
 
-            async def target_path_selected() -> None:
-                self.build_command()
-
             def build_command() -> None:
+                try:
+                    prop_suffix = self.prop.value.split(":")[1]
+                except IndexError:
+                    prop_suffix = ""
                 base = ""
                 for key, value in self.picked_options.items():
                     base = base + f" --{key}{f' {value}' if value != '' else ''}"
                 target_path = f"{f' {self.target_path.value}' if self.target_path.value != '' else ''}"
-                base = base + f" {self.auto_name.value.lower()}" + target_path
+                base = base + f" {prop_suffix}" + target_path
                 self.command.value = base
 
             def all_fs_to_lists():
@@ -476,6 +468,17 @@ class Automation(Tab):
                 self.children.update()
                 self.exclude.update()
 
+            def validate_prop(value):
+                parts = value.split(":")
+                for part in parts:
+                    if part.find(" ") != -1:
+                        return False
+                    if len(part) < 1:
+                        return False
+                if len(parts) != 2:
+                    return False
+                return True
+
             if name == "":
                 self.default_options = {
                     "verbose": "",
@@ -496,9 +499,11 @@ class Automation(Tab):
                 row.tailwind.width("[860px]").justify_content("center")
                 with ui.column() as col:
                     col.tailwind.height("full").width("[420px]")
+                    self.prop = el.DInput(label="Property", value="autobackup:{name}", on_change=build_command, validation=validate_prop)
+                    self.app_em.append(self.prop)
                     self.target_host = el.DSelect(target_host, label="Target Host", on_change=target_host_selected)
                     self.target_paths = [""]
-                    self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", new_value_mode="add-unique", on_change=target_path_selected)
+                    self.target_path = el.DSelect(self.target_paths, value="", label="Target Path", new_value_mode="add-unique", on_change=build_command)
                     self.hosts = el.DSelect(source_hosts, label="Source Host(s)", multiple=True, with_input=True)
                     all_fs_to_lists()
                     with ui.scroll_area().classes("col"):
@@ -534,6 +539,7 @@ class Automation(Tab):
                     col.tailwind.height("full").width("[420px]")
                     options_controls()
             if name != "":
+                self.prop.value = self.job_data.get("prop", "autobackup:{name}")
                 self.target_host.value = self.job_data.get("target_host", "")
                 target_path = self.job_data.get("target_path", "")
                 tries = 0
@@ -758,7 +764,9 @@ class Automation(Tab):
                                 with el.WRow() as row:
                                     row.tailwind.height("[40px]")
                                     self.as_spinner = el.Spinner()
+                                    self.app_em = el.ErrorAggregator()
                                     self.save = el.DButton("SAVE", on_click=lambda: automation_dialog.submit("save"))
+                                    self.save.bind_enabled_from(self.app_em, "no_errors")
                                     el.Spinner(master=self.as_spinner)
             self.auto_name.value = name
             if name != "":
@@ -779,11 +787,13 @@ class Automation(Tab):
                         self.scheduler.scheduler.remove_job(job.id)
                 for host in hosts:
                     auto_id = f"{auto_name}@{host}"
-                    await self._remove_prop_from_all_fs(host=host, prop=auto_name)
-                    await self._add_prop_to_fs(host=host, prop=auto_name, value="true", filesystems=self.parentchildren.value)
-                    await self._add_prop_to_fs(host=host, prop=auto_name, value="parent", filesystems=self.parent.value)
-                    await self._add_prop_to_fs(host=host, prop=auto_name, value="child", filesystems=self.children.value)
-                    await self._add_prop_to_fs(host=host, prop=auto_name, value="false", filesystems=self.exclude.value)
+                    command = AutomationTemplate(self.prop.value)
+                    prop = command.safe_substitute(name=auto_name, host=host)
+                    await self._remove_prop_from_all_fs(host=host, prop=prop)
+                    await self._add_prop_to_fs(host=host, prop=prop, value="true", filesystems=self.parentchildren.value)
+                    await self._add_prop_to_fs(host=host, prop=prop, value="parent", filesystems=self.parent.value)
+                    await self._add_prop_to_fs(host=host, prop=prop, value="child", filesystems=self.children.value)
+                    await self._add_prop_to_fs(host=host, prop=prop, value="false", filesystems=self.exclude.value)
                     self.fs["values"] = {}
                     self.fs["values"]["parentchildren"] = self.parentchildren.value
                     self.fs["values"]["parent"] = self.parent.value
@@ -791,6 +801,7 @@ class Automation(Tab):
                     self.fs["values"]["exclude"] = self.exclude.value
                     auto = scheduler.Zfs_Autobackup(
                         id=auto_id,
+                        name=auto_name,
                         hosts=hosts,
                         host=host,
                         command="python -m zfs_autobackup.ZfsAutobackup" + self.command.value,
@@ -803,6 +814,7 @@ class Automation(Tab):
                         filesystems=self.fs,
                         pipe_success=self.pipe_success.value,
                         pipe_error=self.pipe_error.value,
+                        prop=self.prop.value,
                     )
                     self.scheduler.scheduler.add_job(
                         automation_job,
@@ -822,6 +834,7 @@ class Automation(Tab):
                     auto_id = f"{auto_name}@{host}"
                     auto = scheduler.Automation(
                         id=auto_id,
+                        name=auto_name,
                         app=self.app.value,
                         hosts=hosts,
                         host=host,
@@ -844,6 +857,7 @@ class Automation(Tab):
                 auto_id = f"{auto_name}@{self.host}"
                 auto = scheduler.Automation(
                     id=auto_id,
+                    name=auto_name,
                     app=self.app.value,
                     hosts=hosts,
                     host=self.host,
