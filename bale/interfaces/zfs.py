@@ -137,7 +137,7 @@ class Zfs:
                         with_holds.append(_name)
                 with_holds = " ".join(with_holds)
             else:
-                with_holds = [snapshot]
+                with_holds = snapshot
             if len(with_holds) > 0:
                 result = await self.execute(f"zfs holds -H -r {with_holds}", notify=False)
                 tags: Dict[str, list[str]] = {}
@@ -149,11 +149,16 @@ class Zfs:
                         if s not in tags:
                             tags[s] = []
                         tags[s].append(md["tag"])
-                    self._last_data[query] = tags
-                    if snapshot in self._last_data[query]:
-                        result.data = self._last_data[query][snapshot]
+                    if query not in self._last_data:
+                        self._last_data[query] = {}
+                    self._last_data[query].update(tags)
+                    if snapshot is None:
+                        result.data = self._last_data[query]
                     else:
-                        result.data = []
+                        if snapshot in self._last_data[query]:
+                            result.data = self._last_data[query][snapshot]
+                        else:
+                            result.data = []
             else:
                 return Result(data=[])
         else:
@@ -227,6 +232,7 @@ class Zfs:
                     md["creation_date"] = datetime.fromtimestamp(md["creation"]).strftime("%Y/%m/%d")
                     md["creation_time"] = datetime.fromtimestamp(md["creation"]).strftime("%H:%M")
                     md["used"] = format_bytes(md["used_bytes"])
+                    md["userrefs"] = int(md["userrefs"])
                     snapshot = f"{md['filesystem']}@{md['name']}"
                     snapshots[snapshot] = md
             self._last_data[query] = snapshots

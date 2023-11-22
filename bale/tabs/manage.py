@@ -259,32 +259,34 @@ class Manage(Tab):
         if result == "confirm":
             self._spinner.visible = True
             rows = await self._grid.get_selected_rows()
-            for row in rows:
-                holds = await self.zfs.holds_for_snapshot(f"{row['filesystem']}@{row['name']}")
-                for tag in holds.data:
-                    if tag not in all_tags:
-                        all_tags.append(tag)
-            if len(all_tags) > 0:
-                tags.update()
-                self._spinner.visible = False
-                result = await dialog
-                if result == "release":
-                    if len(tags.value) > 0:
-                        for tag in tags.value:
-                            for row in rows:
-                                tasks = self._add_task(
-                                    "release",
-                                    zfs.SnapshotRelease(
-                                        name=f"{row['filesystem']}@{row['name']}",
-                                        tag=tag,
-                                        recursive=recursive.value,
-                                    ).command,
-                                    hosts=zfs_hosts.value,
-                                )
-                                if self._auto.value is True:
-                                    for task in tasks:
-                                        await self._run_task(task=task, spinner=self._spinner)
-                                    await self.display_snapshots()
+            if len(rows) > 0:
+                for row in rows:
+                    holds = await self.zfs.holds_for_snapshot(f"{row['filesystem']}@{row['name']}")
+                    for tag in holds.data:
+                        if tag not in all_tags:
+                            all_tags.append(tag)
+                if len(all_tags) > 0:
+                    tags.update()
+                    self._spinner.visible = False
+                    result = await dialog
+                    if result == "release":
+                        if len(tags.value) > 0:
+                            for tag in tags.value:
+                                for row in rows:
+                                    tasks = self._add_task(
+                                        "release",
+                                        zfs.SnapshotRelease(
+                                            name=f"{row['filesystem']}@{row['name']}",
+                                            tag=tag,
+                                            recursive=recursive.value,
+                                        ).command,
+                                        hosts=zfs_hosts.value,
+                                    )
+                                    if self._auto.value is True:
+                                        for task in tasks:
+                                            await self._run_task(task=task, spinner=self._spinner)
+                                        await self.display_snapshots()
+        self._spinner.visible = False
         self._set_selection()
 
     def _update_task_status(self, timestamp, status, result=None):
