@@ -10,18 +10,18 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 
 @dataclass(kw_only=True)
 class Automation:
-    id: str
-    name: str
-    app: str
-    hosts: List[str]
-    host: str
-    command: str
-    schedule_mode: str
-    triggers: Dict[str, str]
-    options: Union[Dict[str, Any], None] = None
+    id: str = ""
+    name: str = ""
+    app: str = "remote"
+    hosts: List[str] = field(default_factory=list)
+    host: str = ""
+    command: str = ""
+    schedule_mode: str = ""
+    triggers: Dict[str, str] = field(default_factory=dict)
+    options: Dict[str, Any] = field(default_factory=dict)
+    pipe_success: bool = False
+    pipe_error: bool = False
     timestamp: float = field(default_factory=time.time)
-    pipe_success: bool
-    pipe_error: bool
 
     def to_dict(self) -> Dict[str, Any]:
         return self.__dict__
@@ -30,12 +30,14 @@ class Automation:
 @dataclass(kw_only=True)
 class Zfs_Autobackup(Automation):
     app: str = "zfs_autobackup"
-    execute_mode: str = "local"
-    prop: str
-    target_host: str
-    target_path: str
-    target_paths: List[str]
-    filesystems: Dict[str, Union[str, List[str], Dict[str, str]]]
+    prop: str = "autobackup:{name}"
+    target_host: str = ""
+    target_path: str = ""
+    target_paths: List[str] = field(default_factory=list)
+    parentchildren: List[str] = field(default_factory=list)
+    parent: List[str] = field(default_factory=list)
+    children: List[str] = field(default_factory=list)
+    exclude: List[str] = field(default_factory=list)
 
 
 class _Scheduler:
