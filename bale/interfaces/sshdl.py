@@ -3,7 +3,7 @@ from pathlib import Path
 import stat
 from datetime import datetime
 import uuid
-from nicegui import app, background_tasks, events, ui
+from nicegui import app, background_tasks, events, ui  # type: ignore
 from fastapi.responses import StreamingResponse
 import asyncssh
 from bale import elements as el

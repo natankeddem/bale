@@ -1,4 +1,4 @@
-from nicegui import ui
+from nicegui import ui  # type: ignore
 from bale import elements as el
 from bale.tabs import Tab
 from bale.interfaces import ssh

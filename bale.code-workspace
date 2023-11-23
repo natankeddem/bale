@@ -34,6 +34,9 @@
 			"-l",
 			"180"
 		],
-		"editor.suggest.showStatusBar": true
+		"editor.suggest.showStatusBar": true,
+		"pylint.args": [
+			"\"pylint.args\": [\"--disable=C0115\", \"--disable=C0116\", \"--disable=C0301\",\"--max-line-length=180\"]"
+		]
 	}
 }

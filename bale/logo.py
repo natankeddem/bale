@@ -1,4 +1,4 @@
-from nicegui import ui
+from nicegui import ui  # type: ignore
 import logging
 
 logger = logging.getLogger(__name__)

@@ -3,12 +3,15 @@ import asyncio
 from datetime import datetime
 import json
 import string
-from apscheduler.triggers.combining import AndTrigger
-from apscheduler.triggers.combining import OrTrigger
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.job import Job  # type: ignore
+from apscheduler.triggers.combining import AndTrigger  # type: ignore
+from apscheduler.triggers.combining import OrTrigger  # type: ignore
+from apscheduler.triggers.cron import CronTrigger  # type: ignore
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore
+from cron_validator import CronValidator  # type: ignore
+from cron_descriptor import get_description  # type: ignore
+from nicegui import ui, Tailwind, events  # type: ignore
 from . import SelectionConfirm, Tab
-from nicegui import ui, Tailwind, events
 from bale import elements as el
 from bale.result import Result
 from bale.interfaces import cli
@@ -16,8 +19,7 @@ from bale.interfaces import ssh
 from bale.interfaces import zfs
 from bale.apps import zab
 from bale import scheduler
-from cron_validator import CronValidator
-from cron_descriptor import get_description
+
 import logging
 
 

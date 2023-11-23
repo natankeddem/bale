@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from nicegui import ui, events
+from nicegui import ui, events  # type: ignore
 import httpx
 from . import SelectionConfirm, Tab
 from bale import elements as el

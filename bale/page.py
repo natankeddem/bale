@@ -1,5 +1,5 @@
 import asyncio
-from nicegui import app, Client, ui
+from nicegui import app, Client, ui  # type: ignore
 from bale import elements as el
 from bale.drawer import Drawer
 from bale.content import Content

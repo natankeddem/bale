@@ -7,7 +7,7 @@ import os
 if not os.path.exists("data"):
     os.makedirs("data")
 os.environ.setdefault("NICEGUI_STORAGE_PATH", "data")
-from nicegui import ui
+from nicegui import ui  # type: ignore
 
 ui.card.default_style("max-width: none")
 ui.card.default_props("flat bordered")

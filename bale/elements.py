@@ -1,11 +1,11 @@
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
-from nicegui import ui, app, Tailwind
-from nicegui.elements.spinner import SpinnerTypes
-from nicegui.elements.tabs import Tab
-from nicegui.tailwind_types.height import Height
-from nicegui.tailwind_types.width import Width
-from nicegui.elements.mixins.validation_element import ValidationElement
-from nicegui.events import GenericEventArguments, handle_event
+from nicegui import ui, app, Tailwind  # type: ignore
+from nicegui.elements.spinner import SpinnerTypes  # type: ignore
+from nicegui.elements.tabs import Tab  # type: ignore
+from nicegui.tailwind_types.height import Height  # type: ignore
+from nicegui.tailwind_types.width import Width  # type: ignore
+from nicegui.elements.mixins.validation_element import ValidationElement  # type: ignore
+from nicegui.events import GenericEventArguments, handle_event  # type: ignore
 from bale.interfaces import cli
 import logging
 

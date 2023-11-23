@@ -6,7 +6,7 @@ from datetime import datetime
 import time
 import json
 import httpx
-from nicegui import app, ui
+from nicegui import app, ui  # type: ignore
 from bale.interfaces.zfs import Ssh
 from bale import elements as el
 from bale.result import Result

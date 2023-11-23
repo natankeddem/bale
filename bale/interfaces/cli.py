@@ -4,7 +4,7 @@ from asyncio.subprocess import Process, PIPE
 import contextlib
 import shlex
 from datetime import datetime
-from nicegui import ui
+from nicegui import ui  # type: ignore
 from bale.result import Result
 import logging
 

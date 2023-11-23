@@ -5,7 +5,7 @@ from pathlib import Path
 from functools import cache
 from datetime import datetime
 import time
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 
 
 @dataclass(kw_only=True)

@@ -1,6 +1,6 @@
 import asyncio
 from copy import deepcopy
-from nicegui import background_tasks, ui
+from nicegui import background_tasks, ui  # type: ignore
 from . import SelectionConfirm, Tab, Task
 from bale.result import Result
 from bale import elements as el
