@@ -115,16 +115,15 @@ class Zfs:
         return result
 
     async def filesystems_with_prop(self, prop: str) -> Result:
-        result = await self.execute(f"zfs get -Hp -t filesystem,volume {prop}")
         filesystems = []
+        result = await self.execute(f"zfs get -Hp -t filesystem,volume {prop}")
         for line in result.stdout_lines:
             matches = re.match("^(?P<name>[^\t]+)\t(?P<property>[^\t]+)\t(?P<value>[^\t]+)\t(?P<source>[^\n]+)", line)
             if matches is not None:
                 md = matches.groupdict()
                 if md["property"] == prop and md["source"] == "local":
                     filesystems.append(md["name"])
-            result = Result(data=filesystems, cached=False)
-        return result
+        return Result(data=filesystems, cached=False)
 
     async def holds_for_snapshot(self, snapshot: Union[str, None] = None) -> Result:
         query = "holds_for_snapshot"
