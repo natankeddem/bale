@@ -767,7 +767,6 @@ class Automation(Tab):
                         self.scheduler.scheduler.remove_job(job.id)
                 for host in hosts:
                     auto_id = f"{auto_name}@{host}"
-
                     if self.previous_prop != "":
                         command = AutomationTemplate(self.previous_prop)
                         prop = command.safe_substitute(name=auto_name, host=host)
@@ -810,8 +809,8 @@ class Automation(Tab):
                     )
             elif self.app.value == "remote":
                 for job in jobs:
-                    j = job.id.split("@")[0]
-                    if j == auto_name:
+                    auto = automation(job)
+                    if auto is not None and auto.name == auto_name:
                         self.scheduler.scheduler.remove_job(job.id)
                 for host in hosts:
                     auto_id = f"{auto_name}@{host}"
