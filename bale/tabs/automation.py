@@ -268,8 +268,15 @@ class Automation(Tab):
             rows = await self._grid.get_selected_rows()
             for row in rows:
                 for job in self.scheduler.scheduler.get_jobs():
-                    j = job.id.split("@")[0]
-                    if j == row["name"]:
+                    auto = automation(job)
+                    if auto is not None and auto.name == row["name"]:
+                        if job.id in job_handlers:
+                            del job_handlers[job.id]
+                        if isinstance(auto, scheduler.Zfs_Autobackup):
+                            for host in auto.hosts:
+                                command = AutomationTemplate(auto.prop)
+                                prop = command.safe_substitute(name=auto.name, host=host)
+                                await self._remove_prop_from_all_fs(host=host, prop=prop)
                         self.scheduler.scheduler.remove_job(job.id)
                 self._automations.remove(row)
             self._grid.update()
