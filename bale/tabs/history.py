@@ -34,7 +34,12 @@ class History(Tab):
                     "rowSelection": "multiple",
                     "paginationAutoPageSize": True,
                     "pagination": True,
-                    "defaultColDef": {"resizable": True, "sortable": True, "suppressMovable": True, "sortingOrder": ["asc", "desc"]},
+                    "defaultColDef": {
+                        "resizable": True,
+                        "sortable": True,
+                        "suppressMovable": True,
+                        "sortingOrder": ["asc", "desc"],
+                    },
                     "columnDefs": [
                         {
                             "headerName": "Host",
@@ -57,6 +62,7 @@ class History(Tab):
                                 var date = new Date(data.value * 1000).toLocaleString(undefined, {dateStyle: 'short', timeStyle: 'short', hour12: false});;
                                 return date;
                             }""",
+                            "sort": "desc",
                         },
                         {
                             "headerName": "Status",
