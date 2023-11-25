@@ -91,20 +91,16 @@ class Tab:
                 with el.WColumn():
                     with el.Card() as card:
                         card.tailwind.width("full")
+                        with el.WColumn():
+                            ui.label(f"#> {result.command}").classes("text-secondary")
                         with el.WRow() as row:
                             row.tailwind.justify_content("around")
-                            with ui.column() as col:
-                                col.tailwind.max_width("lg")
-                                ui.label(f"Host Name: {result.name}").classes("text-secondary")
-                                ui.label(f"Command: {result.command}").classes("text-secondary")
-                                timestamp = await ui.run_javascript(
-                                    f"new Date({result.timestamp} * 1000).toLocaleString(undefined, {{dateStyle: 'short', timeStyle: 'short', hour12: 'false'}});"
-                                )
-                                ui.label(f"Timestamp: {timestamp}").classes("text-secondary")
-                            with ui.column() as col:
-                                col.tailwind.max_width("lg")
-                                ui.label(f"Task has failed: {result.failed}").classes("text-secondary")
-                                ui.label(f"Data is cached: {result.cached}").classes("text-secondary")
+                            ui.label(f"Host: {result.name}").classes("text-secondary")
+                            timestamp = await ui.run_javascript(
+                                f"new Date({result.timestamp} * 1000).toLocaleString(undefined, {{dateStyle: 'short', timeStyle: 'short', hour12: 'false'}});"
+                            )
+                            ui.label(f"Timestamp: {timestamp}").classes("text-secondary")
+                            ui.label(f"Return Code: {result.return_code}").classes("text-secondary")
                     with el.Card() as card:
                         with el.WColumn():
                             terminal = cli.Terminal(options={"rows": 18, "cols": 120, "convertEol": True})
