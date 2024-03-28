@@ -59,7 +59,7 @@
    ansible-playbook -i inv.yml pve-install.yml
    ```
 
-### Direct install on Debian
+### Manual install on Debian
 
 1. Install required packages.
 
