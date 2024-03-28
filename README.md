@@ -59,6 +59,73 @@
    ansible-playbook -i inv.yml pve-install.yml
    ```
 
+### Direct install on Debian
+
+1. Install required packages.
+
+   ```bash
+   sudo apt update
+   sudo apt install -y git python3-pip python3-venv sshpass
+   ```
+
+2. Clone the repository.
+
+   ```bash
+   git clone https://github.com/natankeddem/bale.git
+   ```
+
+3. Move to bale directory.
+
+   ```bash
+   cd bale
+   ```
+
+4. Create python virtual environment.
+
+   ```bash
+   python3 -m venv ./venv
+   ```
+
+5. Activate virtual environment.
+
+   ```bash
+   source ./venv/bin/activate
+   ```
+
+6. Install pip3 packages from requirements.txt
+   
+   ```bash
+   pip3 install -r requirements.txt
+   ```
+
+7. Exit the virtual environment.
+   
+   ```bash
+   deactivate
+   ```
+
+8. Change paths in `resources/bale.service` if needed then copy to service directory and activate.
+
+   ```bash
+   sudo cp resources/bale.service /etc/systemd/system
+   sudo systemctl enable bale.service
+   ```
+
+9. Start the service and check status.
+
+   ```bash
+   sudo systemctl start bale.service
+   sudo systemctl status bale.service
+   ```
+
+   Troubleshooting: If you get an error like this: `bale.service: Failed to locate executable /root/bale/venv/bin/python: No such file or directory`, edit your paths to the correct ones in the `/etc/systemd/system/bale.service` file then reload and restart.
+
+      ```bash
+      sudo systemctl daemon-reload
+      sudo systemctl start bale.service
+      sudo systemctl status bale.service
+      ```
+
 ### Access GUI
 
 Access bale by navigating to `http://host:8080`.
