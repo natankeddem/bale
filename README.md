@@ -104,27 +104,36 @@
    deactivate
    ```
 
-8. Change paths in `resources/bale.service` if needed then copy to service directory and activate.
+8. Edit `resources/bale.service` with the actual path you are utilizing on your system.
+
+   ```bash
+   nano resources/bale.service
+   ```
+
+9. Change paths in `resources/bale.service` if needed then copy to service directory and activate.
 
    ```bash
    sudo cp resources/bale.service /etc/systemd/system
    sudo systemctl enable bale.service
    ```
+10. Start the service and check status.
 
-9. Start the service and check status.
+    ```bash
+    sudo systemctl start bale.service
+    sudo systemctl status bale.service
+    ```
 
-   ```bash
-   sudo systemctl start bale.service
-   sudo systemctl status bale.service
-   ```
+    #### Troubleshooting
+    If you get an error like this: `bale.service: Failed to locate executable /root/bale/venv/bin/python: No such file or directory`, modify the path in your `/etc/systemd/system/bale.service` file.
+    ```bash
+    sudo nano /etc/systemd/system/bale.service
+    ```
 
-   Troubleshooting: If you get an error like this: `bale.service: Failed to locate executable /root/bale/venv/bin/python: No such file or directory`, edit your paths to the correct ones in the `/etc/systemd/system/bale.service` file then reload and restart.
-
-      ```bash
-      sudo systemctl daemon-reload
-      sudo systemctl start bale.service
-      sudo systemctl status bale.service
-      ```
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl start bale.service
+    sudo systemctl status bale.service
+    ```
 
 ### Access GUI
 
