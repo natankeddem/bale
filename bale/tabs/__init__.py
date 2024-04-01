@@ -83,7 +83,7 @@ class Tab:
 
     @classmethod
     def register_connection(cls, host: str) -> None:
-        cls._zfs[host] = Ssh(path="data", host=host)
+        cls._zfs[host] = Ssh(host)
 
     async def _display_result(self, result: Result) -> None:
         with ui.dialog() as dialog, el.Card():

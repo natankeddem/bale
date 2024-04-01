@@ -116,30 +116,49 @@ class Cli:
             self._terminate.clear()
             self._busy = False
         return Result(
-            command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=terminated, truncated=self._truncated
+            command=command,
+            return_code=process.returncode,
+            stdout_lines=self.stdout.copy(),
+            stderr_lines=self.stderr.copy(),
+            terminated=terminated,
+            truncated=self._truncated,
         )
 
-    async def shell(self, command: str) -> Result:
+    async def shell(self, command: str, max_output_lines: int = 0) -> Result:
         self._busy = True
         try:
             process = await asyncio.create_subprocess_shell(command, stdout=PIPE, stderr=PIPE)
             if process is not None and process.stdout is not None and process.stderr is not None:
-                self.clear_buffers()
+                self.stdout.clear()
+                self.stderr.clear()
                 self._terminate.clear()
+                self._truncated = False
+                terminated = False
                 now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
                 self.prefix_line = f"<{now}> {command}\n"
                 for terminal in self._stdout_terminals:
                     terminal.call_terminal_method("write", "\n" + self.prefix_line)
                 await asyncio.gather(
+                    self._controller(process=process, max_output_lines=max_output_lines),
                     self._read_stdout(stream=process.stdout),
                     self._read_stderr(stream=process.stderr),
                 )
+                if self._terminate.is_set():
+                    terminated = True
                 await process.wait()
         except Exception as e:
             raise e
         finally:
+            self._terminate.clear()
             self._busy = False
-        return Result(command=command, return_code=process.returncode, stdout_lines=self.stdout.copy(), stderr_lines=self.stderr.copy(), terminated=False)
+        return Result(
+            command=command,
+            return_code=process.returncode,
+            stdout_lines=self.stdout.copy(),
+            stderr_lines=self.stderr.copy(),
+            terminated=terminated,
+            truncated=self._truncated,
+        )
 
     def clear_buffers(self):
         self.prefix_line = ""

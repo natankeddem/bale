@@ -48,7 +48,7 @@ def populate_job_handler(app: str, job_id: str, host: str):
     tab = Tab(host=None, spinner=None)
     if job_id not in job_handlers:
         if app == "remote":
-            job_handlers[job_id] = ssh.Ssh("data", host=host)
+            job_handlers[job_id] = ssh.Ssh(host)
         else:
             job_handlers[job_id] = cli.Cli()
     return job_handlers[job_id]

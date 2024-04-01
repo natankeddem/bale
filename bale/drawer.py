@@ -66,7 +66,7 @@ class Drawer(object):
                 )
                 self._table.tailwind.width("full")
                 self._table.visible = False
-                for name in ssh.get_hosts("data"):
+                for name in ssh.get_hosts():
                     self._add_host_to_table(name)
             chevron = ui.button(icon="chevron_left", color=None, on_click=toggle_drawer).props("padding=0px")
             chevron.classes("absolute")
@@ -87,7 +87,7 @@ class Drawer(object):
         save = None
 
         async def send_key():
-            s = ssh.Ssh("data", host=host_input.value, hostname=hostname_input.value, username=username_input.value, password=password_input.value)
+            s = ssh.Ssh(host_input.value, hostname=hostname_input.value, username=username_input.value, password=password_input.value)
             result = await s.send_key()
             if result.stdout.strip() != "":
                 el.notify(result.stdout.strip(), multi_line=True, type="positive")
@@ -110,12 +110,12 @@ class Drawer(object):
                         c.tailwind.width("full")
                         with ui.scroll_area() as s:
                             s.tailwind.height("[160px]")
-                            public_key = await ssh.get_public_key("data")
+                            public_key = await ssh.get_public_key()
                             ui.label(public_key).classes("text-secondary break-all")
                 el.DButton("SAVE", on_click=lambda: host_dialog.submit("save")).bind_enabled_from(save_em, "no_errors")
             host_input.value = name
             if name != "":
-                s = ssh.Ssh(path="data", host=name)
+                s = ssh.Ssh(name)
                 hostname_input.value = s.hostname
                 username_input.value = s.username
 
@@ -125,11 +125,11 @@ class Drawer(object):
                 default = Tab(spinner=None).common.get("default", "")
                 if default == name:
                     Tab(spinner=None).common["default"] = ""
-                ssh.Ssh(path="data", host=name).remove()
+                ssh.Ssh(name).remove()
                 for row in self._table.rows:
                     if name == row["name"]:
                         self._table.remove_rows(row)
-            ssh.Ssh(path="data", host=host_input.value, hostname=hostname_input.value, username=username_input.value)
+            ssh.Ssh(host_input.value, hostname=hostname_input.value, username=username_input.value)
             self._add_host_to_table(host_input.value)
 
     def _modify_host(self, mode):
@@ -162,7 +162,7 @@ class Drawer(object):
         if self._selection_mode == "remove":
             if len(e.selection) > 0:
                 for row in e.selection:
-                    ssh.Ssh(path="data", host=row["name"]).remove()
+                    ssh.Ssh(row["name"]).remove()
                     self._table.remove_rows(row)
         self._modify_host(None)
 

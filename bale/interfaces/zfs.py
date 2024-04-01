@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 import re
 from datetime import datetime
 from dataclasses import dataclass
@@ -243,8 +243,17 @@ class Zfs:
 
 
 class Ssh(ssh.Ssh, Zfs):
-    def __init__(self, path: str, host: str, hostname: str = "", username: str = "", password: Union[str, None] = None) -> None:
-        super().__init__(path, host, hostname, username, password)
+    def __init__(
+        self,
+        host: str,
+        hostname: str = "",
+        username: str = "",
+        password: Optional[str] = None,
+        options: Optional[Dict[str, str]] = None,
+        path: str = "data",
+        seperator: bytes = b"\n",
+    ) -> None:
+        super().__init__(host, hostname, username, password, options, path, seperator)
         Zfs.__init__(self)
 
     def notify(self, command: str):
