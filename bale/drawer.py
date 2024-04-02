@@ -1,3 +1,4 @@
+from typing import Optional
 from nicegui import ui  # type: ignore
 from bale import elements as el
 from bale.tabs import Tab
@@ -97,8 +98,12 @@ class Drawer(object):
         with ui.dialog() as host_dialog, el.Card():
             with el.DBody(height="[560px]", width="[360px]"):
                 with el.WColumn():
-                    host_input = el.DInput(label="Host", value=" ")
-                    hostname_input = el.DInput(label="Hostname", value=" ")
+                    all_hosts = list(ssh.get_hosts())
+                    if name != "":
+                        if name in all_hosts:
+                            all_hosts.remove(name)
+                    host_input = el.VInput(label="Host", value=" ", invalid_characters="""'`"$\\;&<>|(){} """, invalid_values=all_hosts, max_length=20)
+                    hostname_input = el.VInput(label="Hostname", value=" ", invalid_characters="""!@#$%^&*'`"\\/:;<>|(){}=+[],? """)
                     username_input = el.DInput(label="Username", value=" ")
                     save_em = el.ErrorAggregator(host_input, hostname_input, username_input)
                     with el.Card() as c:
